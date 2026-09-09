@@ -25,45 +25,48 @@ const SHOP_ITEMS={
   'Fragmento Antigo':{id:'fragment_ancient',slot:'relíquia',icon:'✦',rarity:'Lendária',price:200,power:45,desc:'Fragmento raro carregado de memórias.'}
 };
 const ITEM_BY_ID=Object.fromEntries(Object.values(SHOP_ITEMS).map(x=>[x.id,x]));
-function save(){try{localStorage.setItem('echobound_v5000',JSON.stringify(state));}catch{} updateHUD();}
+Object.entries(SHOP_ITEMS).forEach(([name,item])=>item.name=name);
 function ownedCount(id){return state.inventory.filter(x=>x===id).length}
 function isEquipped(id){return Object.values(state.equipped).includes(id)}
-function buyItem(name){
-  const item=SHOP_ITEMS[name]; if(!item) return;
-  if(state.coins<item.price){notifyShop('Echo Coins insuficientes.');return;}
-  state.coins-=item.price; state.inventory.push(item.id);
-  save(); buildShop(document.querySelector('#shopTitle')?.textContent||'Arsenal'); notifyShop(`${item.icon} ${name} comprado!`);
-}
-function equipItem(id){
-  const item=ITEM_BY_ID[id]; if(!item || !ownedCount(id)) return;
-  if(item.slot==='consumível'){notifyShop('Consumíveis não precisam ser equipados.');return;}
-  state.equipped[item.slot]=id; save(); buildInventory(); notifyShop(`${item.icon} ${itemName(id)} equipado!`);
-}
-function itemName(id){return ITEM_BY_ID[id]?.name||Object.keys(SHOP_ITEMS).find(k=>SHOP_ITEMS[k].id===id)||'Item'}
-Object.entries(SHOP_ITEMS).forEach(([name,item])=>item.name=name);
 let shopNoticeTimer=0;
 function notifyShop(msg){const el=$('#shopNotice');if(!el)return;el.textContent=msg;el.classList.remove('hidden');clearTimeout(shopNoticeTimer);shopNoticeTimer=setTimeout(()=>el.classList.add('hidden'),2200)}
+function buyItem(name){const item=SHOP_ITEMS[name];if(!item)return;if(state.coins<item.price){notifyShop('Echo Coins insuficientes.');return;}state.coins-=item.price;state.inventory.push(item.id);save();buildShop($('#shopTitle')?.textContent||'Arsenal');notifyShop(`${item.icon} ${name} comprado!`)}
+function equipItem(id){const item=ITEM_BY_ID[id];if(!item||!ownedCount(id))return;if(item.slot==='consumível'){notifyShop('Consumíveis não precisam ser equipados.');return;}state.equipped[item.slot]=id;save();buildInventory();buildLobbyProfile();notifyShop(`${item.icon} ${item.name} equipado!`)}
+function buildLobbyProfile(){
+  const name=$('#profileName'),lvl=$('#profileLevel'),equip=$('#profileEquipment'),stats=$('#profileStats');
+  if(!name||!lvl||!equip||!stats)return;
+  name.textContent=state.name||'Aventureiro'; lvl.textContent=state.level||1;
+  const slots=[['arma','⚔','Arma'],['armadura','🛡','Armadura'],['relíquia','💎','Relíquia']];
+  equip.innerHTML=slots.map(([slot,icon,label])=>{const it=ITEM_BY_ID[state.equipped[slot]];return `<div><b>${icon}</b><span>${label}: ${it?it.name:'Nenhum'}</span></div>`}).join('');
+  const weapon=ITEM_BY_ID[state.equipped.arma]?.power||0;
+  const armor=ITEM_BY_ID[state.equipped.armadura]?.power||0;
+  const relic=ITEM_BY_ID[state.equipped['relíquia']]?.power||0;
+  const values=[['Força',Math.min(10,Math.round(weapon/5))],['Defesa',Math.min(10,Math.round(armor/5))],['Velocidade',Math.min(10,1+Math.round(relic/15))],['Eco',Math.min(10,Math.round((weapon+relic)/9))]];
+  stats.innerHTML=values.map(([label,v])=>`<div class="profile-stat"><b>${label}</b><span><i style="width:${v*10}%"></i></span><em>${v}/10</em></div>`).join('');
+}
+
+
 let gl,program,canvas,raf,last=0,keys={},time=0,attackCD=0,echoCD=0,gameRunning=false;
 let authMode='login', currentRoom=null, socket=null;
 const ONLINE_WS_URL=(window.ECHOBOUND_CONFIG&&window.ECHOBOUND_CONFIG.wsUrl)||'';
-let player={x:0,y:1.2,z:8,hp:100},enemies=[],boss=null,particles=[],objects=[]; let camera={yaw:0,pitch:.32,dist:13}; let sceneMode='lobby'; let lobbyServices=[];
+let player={x:0,y:1.2,z:8,hp:100},enemies=[],boss=null,particles=[],objects=[]; let camera={yaw:0,pitch:.32,dist:13}; let sceneMode='lobby'; let lobbyCanvas=null; let lobbyServices=[];
 const VS=`attribute vec3 aPos,aNormal,aColor;uniform mat4 uMVP,uModel;uniform vec3 uLight;varying vec3 vColor;varying float vLight;void main(){vec3 n=normalize((uModel*vec4(aNormal,0.)).xyz);vLight=max(.2,dot(n,normalize(uLight))*.72+.28);vColor=aColor;gl_Position=uMVP*vec4(aPos,1.);}`;
-const FS=`precision mediump float;varying vec3 vColor;varying float vLight;void main(){vec3 c=max(vColor*vLight,vec3(.025));gl_FragColor=vec4(c,1.);}`;
-const cubePos=new Float32Array([-0.5,-0.5,-0.5, 0.5,-0.5,-0.5, 0.5,0.5,-0.5, -0.5,0.5,-0.5, -0.5,-0.5,0.5, 0.5,-0.5,0.5, 0.5,0.5,0.5, -0.5,0.5,0.5, -0.5,-0.5,-0.5, -0.5,0.5,-0.5, -0.5,0.5,0.5, -0.5,-0.5,0.5, 0.5,-0.5,-0.5, 0.5,-0.5,0.5, 0.5,0.5,0.5, 0.5,0.5,-0.5, -0.5,-0.5,-0.5, -0.5,-0.5,0.5, 0.5,-0.5,0.5, 0.5,-0.5,-0.5, -0.5,0.5,-0.5, 0.5,0.5,-0.5, 0.5,0.5,0.5, -0.5,0.5,0.5]);
+const FS=`precision mediump float;varying vec3 vColor;varying float vLight;void main(){vec3 c=vColor*vLight;float d=gl_FragCoord.z;c=mix(c,vec3(.01,.02,.035),smoothstep(.72,1.,d));gl_FragColor=vec4(c,1.);}`;
+const cubePos=new Float32Array([-.5,-.5,-.5,.5,-.5,-.5,.5,.5,-.5,-.5,.5,-.5,-.5,-.5,.5,.5,-.5,.5,.5,.5,.5,-.5,.5,.5,-.5,-.5,-.5,-.5,.5,-.5,-.5,.5,.5,-.5,-.5,.5,.5,-.5,-.5,.5,.5,-.5,.5,.5,.5,.5,-.5,.5,.5,-.5,-.5,-.5,-.5,-.5,.5,.5,-.5,.5,.5,-.5,-.5,-.5,.5,-.5,-.5,.5,.5,.5,.5,.5,.5,-.5,.5,-.5,.5,-.5,.5,.5,-.5,.5,.5,.5,-.5,.5,.5,-.5,-.5,-.5,.5,-.5,-.5,.5,-.5,.5,-.5,-.5,.5]);
 const cubeNorm=[];for(let i=0;i<6;i++){const n=[[0,0,-1],[0,0,1],[-1,0,0],[1,0,0],[0,-1,0],[0,1,0]][i];for(let j=0;j<4;j++)cubeNorm.push(...n)}
 const idx=new Uint16Array([0,1,2,0,2,3,4,5,6,4,6,7,8,9,10,8,10,11,12,13,14,12,14,15,16,17,18,16,18,19,20,21,22,20,22,23]);
-let pBuf,nBuf,cBuf,iBuf,uMVP,uModel,aColorLoc;
+let pBuf,nBuf,cBuf,iBuf,uMVP,uModel;
 function mat4(){return new Float32Array(16)}function ident(m){m.fill(0);m[0]=m[5]=m[10]=m[15]=1;return m}
-function mul(a,b){const o=mat4();for(let c=0;c<4;c++)for(let r=0;r<4;r++)o[c*4+r]=a[r]*b[c*4]+a[4+r]*b[c*4+1]+a[8+r]*b[c*4+2]+a[12+r]*b[c*4+3];return o}
+function mul(a,b){const o=mat4();for(let r=0;r<4;r++)for(let c=0;c<4;c++)o[c+r*4]=a[r*4]*b[c]+a[r*4+1]*b[c+4]+a[r*4+2]*b[c+8]+a[r*4+3]*b[c+12];return o}
 function persp(fovy,aspect,n,f){const o=mat4(),t=1/Math.tan(fovy/2);o[0]=t/aspect;o[5]=t;o[10]=(f+n)/(n-f);o[11]=-1;o[14]=2*f*n/(n-f);return o}
 function look(eye,c){let z=[eye[0]-c[0],eye[1]-c[1],eye[2]-c[2]],zl=Math.hypot(...z);z=z.map(v=>v/zl);let x=[z[2],0,-z[0]],xl=Math.hypot(...x);x=x.map(v=>v/xl);let y=[z[1]*x[2]-z[2]*x[1],z[2]*x[0]-z[0]*x[2],z[0]*x[1]-z[1]*x[0]];const o=ident(mat4());o[0]=x[0];o[4]=x[1];o[8]=x[2];o[1]=y[0];o[5]=y[1];o[9]=y[2];o[2]=z[0];o[6]=z[1];o[10]=z[2];o[12]=-(x[0]*eye[0]+x[1]*eye[1]+x[2]*eye[2]);o[13]=-(y[0]*eye[0]+y[1]*eye[1]+y[2]*eye[2]);o[14]=-(z[0]*eye[0]+z[1]*eye[1]+z[2]*eye[2]);return o}
 function translate(m,x,y,z){const o=new Float32Array(m);o[12]+=m[0]*x+m[4]*y+m[8]*z;o[13]+=m[1]*x+m[5]*y+m[9]*z;o[14]+=m[2]*x+m[6]*y+m[10]*z;return o}
 function scale(m,x,y,z){const o=new Float32Array(m);for(let i=0;i<4;i++){o[i]*=x;o[4+i]*=y;o[8+i]*=z}return o}
 function rotY(m,a){const c=Math.cos(a),s=Math.sin(a),o=new Float32Array(m);for(let r=0;r<4;r++){const x=m[r],z=m[8+r];o[r]=x*c-z*s;o[8+r]=x*s+z*c}return o}
 function colorHex(h){const n=parseInt(h.slice(1),16);return[(n>>16&255)/255,(n>>8&255)/255,(n&255)/255]}
-function initGL(){canvas=$('#gameCanvas'); gl=canvas.getContext('webgl',{antialias:true,alpha:false})||canvas.getContext('experimental-webgl');if(!gl)throw Error('WebGL não disponível');const vs=gl.createShader(gl.VERTEX_SHADER);gl.shaderSource(vs,VS);gl.compileShader(vs);if(!gl.getShaderParameter(vs,gl.COMPILE_STATUS))throw Error('Vertex shader: '+gl.getShaderInfoLog(vs));const fs=gl.createShader(gl.FRAGMENT_SHADER);gl.shaderSource(fs,FS);gl.compileShader(fs);if(!gl.getShaderParameter(fs,gl.COMPILE_STATUS))throw Error('Fragment shader: '+gl.getShaderInfoLog(fs));program=gl.createProgram();gl.attachShader(program,vs);gl.attachShader(program,fs);gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error('Falha no shader');gl.useProgram(program);pBuf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,pBuf);gl.bufferData(gl.ARRAY_BUFFER,cubePos,gl.STATIC_DRAW);let a=gl.getAttribLocation(program,'aPos');gl.enableVertexAttribArray(a);gl.vertexAttribPointer(a,3,gl.FLOAT,false,0,0);nBuf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,nBuf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(cubeNorm),gl.STATIC_DRAW);a=gl.getAttribLocation(program,'aNormal');gl.enableVertexAttribArray(a);gl.vertexAttribPointer(a,3,gl.FLOAT,false,0,0);iBuf=gl.createBuffer();gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,iBuf);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,idx,gl.STATIC_DRAW);cBuf=gl.createBuffer();uMVP=gl.getUniformLocation(program,'uMVP');uModel=gl.getUniformLocation(program,'uModel');aColorLoc=gl.getAttribLocation(program,'aColor');gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);gl.disable(gl.CULL_FACE);gl.clearDepth(1);resize()}
-function resize(){if(!gl)return; canvas=$('#gameCanvas'); if(!canvas)return;const q=state.quality==='ultra'?1:state.quality==='high'?.8:.6,d=Math.min(devicePixelRatio||1,2.5);canvas.width=Math.max(1,innerWidth*d*q);canvas.height=Math.max(1,innerHeight*d*q);canvas.style.width=innerWidth+'px';canvas.style.height=innerHeight+'px';gl.viewport(0,0,canvas.width,canvas.height)}
-function drawCube(x,y,z,s,col,ry=0){let m=ident(mat4());m=translate(m,x,y,z);m=rotY(m,ry);m=scale(m,s,s,s);const eye=[player.x+Math.sin(camera.yaw)*camera.dist,7+camera.pitch*8,player.z+Math.cos(camera.yaw)*camera.dist],view=look(eye,[player.x,1,player.z]),proj=persp(1.05,canvas.width/canvas.height,.1,180),mvp=mul(proj,mul(view,m));gl.uniformMatrix4fv(uMVP,false,mvp);gl.uniformMatrix4fv(uModel,false,m);const cv=new Float32Array(24),c=colorHex(col);for(let i=0;i<24;i++)cv.set(c,i*3);gl.bindBuffer(gl.ARRAY_BUFFER,cBuf);gl.bufferData(gl.ARRAY_BUFFER,cv,gl.DYNAMIC_DRAW);gl.enableVertexAttribArray(aColorLoc);gl.vertexAttribPointer(aColorLoc,3,gl.FLOAT,false,0,0);gl.drawElements(gl.TRIANGLES,36,gl.UNSIGNED_SHORT,0)}
+function initGL(){canvas=$('#gameCanvas'); lobbyCanvas=$('#lobbyCanvas');gl=canvas.getContext('webgl',{antialias:true,alpha:false})||canvas.getContext('experimental-webgl');if(!gl)throw Error('WebGL não disponível');const vs=gl.createShader(gl.VERTEX_SHADER);gl.shaderSource(vs,VS);gl.compileShader(vs);const fs=gl.createShader(gl.FRAGMENT_SHADER);gl.shaderSource(fs,FS);gl.compileShader(fs);program=gl.createProgram();gl.attachShader(program,vs);gl.attachShader(program,fs);gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error('Falha no shader');gl.useProgram(program);pBuf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,pBuf);gl.bufferData(gl.ARRAY_BUFFER,cubePos,gl.STATIC_DRAW);let a=gl.getAttribLocation(program,'aPos');gl.enableVertexAttribArray(a);gl.vertexAttribPointer(a,3,gl.FLOAT,false,0,0);nBuf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,nBuf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(cubeNorm),gl.STATIC_DRAW);a=gl.getAttribLocation(program,'aNormal');gl.enableVertexAttribArray(a);gl.vertexAttribPointer(a,3,gl.FLOAT,false,0,0);iBuf=gl.createBuffer();gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,iBuf);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,idx,gl.STATIC_DRAW);cBuf=gl.createBuffer();uMVP=gl.getUniformLocation(program,'uMVP');uModel=gl.getUniformLocation(program,'uModel');gl.enable(gl.DEPTH_TEST);gl.enable(gl.CULL_FACE);resize()}
+function resize(){if(!gl)return; if(sceneMode==='lobby'&&lobbyCanvas){canvas=lobbyCanvas}else if($('#gameCanvas')){canvas=$('#gameCanvas')} if(!canvas)return;const q=state.quality==='ultra'?1:state.quality==='high'?.8:.6,d=Math.min(devicePixelRatio||1,2.5);canvas.width=Math.max(1,innerWidth*d*q);canvas.height=Math.max(1,innerHeight*d*q);canvas.style.width=innerWidth+'px';canvas.style.height=innerHeight+'px';gl.viewport(0,0,canvas.width,canvas.height)}
+function drawCube(x,y,z,s,col,ry=0){let m=ident(mat4());m=translate(m,x,y,z);m=rotY(m,ry);m=scale(m,s,s,s);const eye=[player.x+Math.sin(camera.yaw)*camera.dist,7+camera.pitch*8,player.z+Math.cos(camera.yaw)*camera.dist],view=look(eye,[player.x,1,player.z]),proj=persp(1.05,canvas.width/canvas.height,.1,180),mvp=mul(proj,mul(view,m));gl.uniformMatrix4fv(uMVP,false,mvp);gl.uniformMatrix4fv(uModel,false,m);const cv=new Float32Array(24),c=colorHex(col);for(let i=0;i<24;i++)cv.set(c,i*3);gl.bindBuffer(gl.ARRAY_BUFFER,cBuf);gl.bufferData(gl.ARRAY_BUFFER,cv,gl.DYNAMIC_DRAW);const a=gl.getAttribLocation(program,'aColor');gl.enableVertexAttribArray(a);gl.vertexAttribPointer(a,3,gl.FLOAT,false,0,0);gl.drawElements(gl.TRIANGLES,36,gl.UNSIGNED_SHORT,0)}
 function setupLobby(){
   sceneMode='lobby'; enemies=[]; boss=null; particles=[]; objects=[];
   player={x:0,y:1.2,z:8,hp:100}; camera={yaw:0,pitch:.28,dist:16};
@@ -85,49 +88,22 @@ function openLobbyService(action,shop){
   if(action==='shop'){$('#shopTitle').textContent=shop||'Mercador'; buildShop(shop||'Arsenal'); show('shop');}
   else if(action==='stats'){buildStats();show('stats');}
   else if(action==='inventory'){buildInventory();show('inventory');}
-  else if(action==='map'){buildMap();show('lobby2');}
+  else if(action==='map'){buildMap();show('worldMap');}
   else if(action==='online'){show('online');}
 }
 function nearestLobbyService(){let best=null,bd=999;for(const o of lobbyServices){const d=Math.hypot(player.x-o.x,player.z-o.z);if(d<bd){bd=d;best=o}}return bd<3.2?best:null}
 function updateLobbyPrompt(){if(sceneMode!=='lobby')return;const o=nearestLobbyService(),el=$('#lobbyPrompt');if(!el)return;if(o){el.innerHTML=`<b>E</b> ${o.name}`;el.classList.remove('hidden')}else el.classList.add('hidden')}
 function interactLobby(){const o=nearestLobbyService();if(o)o.action()}
 function renderLobby(){
-  const lp=$('#l3dPlayer'); if(lp){ const sx=Math.max(-42,Math.min(42,player.x*1.35)); const sy=Math.max(-20,Math.min(20,(player.z-8)*.9)); lp.style.transform=`translate(calc(-50% + ${sx}px),calc(-50% + ${sy}px))`; }
-  if(!canvas||!gl)return;
-  gl.viewport(0,0,canvas.width,canvas.height);
-  gl.clearColor(.025,.045,.075,1);
-  gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
-  gl.useProgram(program);
-  gl.uniform3f(gl.getUniformLocation(program,'uLight'),-.35,1,.55);
-  // chão amplo
-  for(let x=-30;x<=30;x+=3)for(let z=-30;z<=30;z+=3){
-    const c=((Math.abs(x/3)+Math.abs(z/3))%2===0)?'#725c43':'#604d39';
-    drawCube(x,-.75,z,2.9,c);
-  }
-  // praça central
-  drawCube(0,-.05,0,12,'#8a7254');
-  drawCube(0,.10,0,8,'#9b805f');
-  // portal/cristal central
-  drawCube(0,1.7,-1,3.0,'#334b78');
-  drawCube(0,3.7,-1,2.0,'#57d7ff');
-  drawCube(0,5.0,-1,1.0,'#b7f4ff');
-  // prédios/serviços
-  lobbyServices.forEach(o=>{
-    drawCube(o.x,.9,o.z,2.1,'#263449');
-    drawCube(o.x,2.35,o.z,1.55,o.col);
-    drawCube(o.x,3.55,o.z,.72,'#e8d5ad');
-  });
-  // árvores e decoração
-  objects.filter(o=>o.type>=20).forEach(o=>{
-    drawCube(o.x,.8,o.z,1.1,'#3b5b42');
-    drawCube(o.x,2.5,o.z,1.8,'#31583b');
-  });
-  // postes de luz
-  for(let i=0;i<8;i++){const a=i*Math.PI/4,x=Math.cos(a)*14,z=Math.sin(a)*14;drawCube(x,1,z,.32,'#a8b4c2');drawCube(x,3,z,.6,'#ffe8a6')}
-  // personagem
-  drawCube(player.x,.9,player.z,1.35,'#4fc8e8',camera.yaw);
-  drawCube(player.x,2.15,player.z,.9,'#d9a47d',camera.yaw);
-  drawCube(player.x,2.85,player.z,.42,'#273c67',camera.yaw);
+  canvas=lobbyCanvas||$('#lobbyCanvas'); if(!canvas||!gl)return;
+  gl.clearColor(.38,.42,.47,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.useProgram(program);gl.uniform3f(gl.getUniformLocation(program,'uLight'),-.4,1,.3);
+  for(let x=-30;x<=30;x+=3)for(let z=-30;z<=30;z+=3)drawCube(x,-.7,z,1.35,(Math.abs(x+z)%6===0)?'#5b4939':'#6a5744');
+  // praça central e caminhos
+  drawCube(0,.05,0,12,'#79634b'); drawCube(0,.16,0,7,'#887157');
+  lobbyServices.forEach((o,i)=>{drawCube(o.x,.9,o.z,1.35,o.col);drawCube(o.x,2.15,o.z,.72,o.col);drawCube(o.x,3.0,o.z,.32,'#e4d4ad')});
+  objects.filter(o=>o.type>=20).forEach(o=>{drawCube(o.x,.9,o.z,.75,o.col);drawCube(o.x,2.1,o.z,1.35,o.col)});
+  // personagem blocky
+  drawCube(player.x,.85,player.z,1.15,'#4fc8e8'); drawCube(player.x,2.0,player.z,.75,'#d9a47d');
   updateLobbyPrompt();
 }
 function setupWorld(){enemies=[];objects=[];particles=[];boss=null;const seed=state.region*1000+state.phase+77,reg=REGIONS[state.region];for(let i=0;i<90;i++){const a=rng(seed+i)*Math.PI*2,r=14+rng(seed+i+80)*55;objects.push({x:Math.cos(a)*r,z:Math.sin(a)*r,type:i%5})}const n=8+state.region+Math.floor((state.phase%25)/4);for(let i=0;i<n;i++){const a=rng(seed+i*4)*Math.PI*2,r=14+rng(seed+i*5)*42,rr=RACES[(state.region+i+state.phase)%RACES.length];enemies.push({x:Math.cos(a)*r,z:Math.sin(a)*r,hp:45+state.region*7,max:45+state.region*7,color:rr[1],speed:.7+rng(i+3)*.8})}if(state.phase%25===24)boss={x:0,z:-32,hp:100,max:100,color:'#ff4f88',name:'Guardião '+(state.region*100+Math.floor(state.phase/25)+1)};player={x:0,y:1.2,z:8,hp:100};updateHUD()}
@@ -137,26 +113,13 @@ function attack(){if(attackCD>0)return;attackCD=.28;enemies=enemies.filter(e=>{i
 function echo(){if(echoCD>0)return;echoCD=3;enemies=enemies.filter(e=>{if(Math.hypot(e.x-player.x,e.z-player.z)<8){e.hp-=75;burst(e.x,1,e.z,'#aa82ff')}return e.hp>0});if(boss&&Math.hypot(boss.x-player.x,boss.z-player.z)<9){boss.hp-=22;burst(boss.x,2,boss.z,'#aa82ff')}}
 function render(){if(sceneMode==='lobby'){renderLobby();return}const reg=REGIONS[state.region];gl.clearColor(...colorHex(reg[1]),1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.useProgram(program);gl.uniform3f(gl.getUniformLocation(program,'uLight'),-.4,1,.3);for(let x=-60;x<=60;x+=5)for(let z=-60;z<=60;z+=5)drawCube(x,-.65,z,2,reg[1]);objects.forEach(o=>{if(o.type===0){drawCube(o.x,.9,o.z,.65,reg[2]);drawCube(o.x,2.8,o.z,2.2,reg[1])}else if(o.type===1)drawCube(o.x,.8,o.z,1.1,'#6b7788');else if(o.type===2)drawCube(o.x,.5,o.z,1.4,'#8d5b3f');else if(o.type===3)drawCube(o.x,1,o.z,.8,reg[2]);else drawCube(o.x,.4,o.z,1.6,'#33404e')});enemies.forEach(e=>{drawCube(e.x,1,e.z,1.25,e.color,Math.atan2(player.x-e.x,player.z-e.z));drawCube(e.x,2.15,e.z,.8,e.color)});if(boss){drawCube(boss.x,2,boss.z,3,boss.color);drawCube(boss.x,5,boss.z,1.8,'#ffd166');$('#bossBar').style.width=Math.max(0,boss.hp)+'%';$('#bossHud').classList.remove('hidden');$('#bossName').textContent=boss.name}else $('#bossHud').classList.add('hidden');drawCube(player.x,1.2,player.z,1.15,'#4f9dff',camera.yaw);drawCube(player.x,2.7,player.z,.78,'#d9a47d',camera.yaw);particles.forEach(p=>drawCube(p.x,p.y,p.z,.12,p.col))}
 function startGame(){
-  let webglReady=!!(gl&&program);
-  if(!webglReady){
-    try{initGL();webglReady=!!(gl&&program)}catch(err){
-      console.warn('WebGL indisponível; usando apresentação compatível.',err);
-      gl=null; program=null;
-      const n=$('#renderNotice');
-      if(n){n.textContent='Modo compatibilidade ativo.';n.classList.remove('hidden')}
-    }
-  }
-  if(sceneMode==='lobby') setupLobby(); else if(webglReady) setupWorld(); else {
-    const n=$('#renderNotice'); if(n){n.textContent='3D indisponível nesta máquina. O Lobby continua jogável em modo compatibilidade.';n.classList.remove('hidden')}
-  }
-  gameRunning=true;
-  last=performance.now();
-  cancelAnimationFrame(raf);
-  raf=requestAnimationFrame(loop);
+  if(!gl||!program){try{initGL()}catch(err){console.warn('WebGL indisponível:',err);const n=$('#renderNotice');if(n){n.textContent='Modo compatibilidade: use um navegador com aceleração gráfica para o 3D completo.';n.classList.remove('hidden')}gameRunning=false;return}}
+  if(sceneMode==='lobby') setupLobby(); else setupWorld();
+  gameRunning=true; last=performance.now(); cancelAnimationFrame(raf); raf=requestAnimationFrame(loop);
 }
-function loop(now){if(!gameRunning)return;const dt=Math.min(.033,(now-last)/1000||.016);last=now;if($('#pauseMenu').classList.contains('hidden')){update(dt);try{render()}catch(err){console.error('EchoBound render error',err);gl=null;program=null;}}raf=requestAnimationFrame(loop)}
+function loop(now){if(!gameRunning)return;const dt=Math.min(.033,(now-last)/1000||.016);last=now;if($('#pauseMenu').classList.contains('hidden')){update(dt);try{render()}catch(err){console.error('EchoBound render error',err);gameRunning=false;}}raf=requestAnimationFrame(loop)}
 function save(){try{localStorage.setItem('echobound_v5000',JSON.stringify(state))}catch{}}
-function updateHUD(){[$('#hudCoins'),$('#coins')].filter(Boolean).forEach(el=>el.textContent=state.coins);const shardEl=$('#hudShards');if(shardEl)shardEl.textContent=state.shards;const phase=state.phase+1,bossPhase=state.phase%25===24;$('#hudName').textContent=state.name;$('#hudLevel').textContent=state.level;$('#hudCoins').textContent=state.coins;$('#hudShards').textContent=state.shards;$('#regionHud').textContent=REGIONS[state.region][0];$('#phaseHud').textContent=`FASE ${phase}/25`;$('#objective').textContent=bossPhase?'Derrote o Guardião':'Explore, lute e encontre o próximo eco';$('#hpBar').style.width=player.hp+'%';$('#xpBar').style.width=(state.xp%100)+'%';$('#chapterLabel').textContent=bossPhase?'CAPÍTULO BOSS':'CAPÍTULO '+((state.phase%6)+1)+'/6';$('#timerLabel').textContent=bossPhase?'90:00':'60:00'}
+function updateHUD(){const phase=state.phase+1,bossPhase=state.phase%25===24;$('#hudName').textContent=state.name;$('#hudLevel').textContent=state.level;$('#hudCoins').textContent=state.coins;$('#hudShards').textContent=state.shards;$('#regionHud').textContent=REGIONS[state.region][0];$('#phaseHud').textContent=`FASE ${phase}/25`;$('#objective').textContent=bossPhase?'Derrote o Guardião':'Explore, lute e encontre o próximo eco';$('#hpBar').style.width=player.hp+'%';$('#xpBar').style.width=(state.xp%100)+'%';$('#chapterLabel').textContent=bossPhase?'CAPÍTULO BOSS':'CAPÍTULO '+((state.phase%6)+1)+'/6';$('#timerLabel').textContent=bossPhase?'90:00':'60:00'}
 function show(id){
   $$('.screen').forEach(x=>x.classList.remove('active'));
   const el=$('#'+id); if(el)el.classList.add('active');
@@ -166,24 +129,9 @@ function show(id){
 function buildMap(){const g=$('#regionGrid');if(!g)return;g.innerHTML=REGIONS.map((r,i)=>`<button class="panel" data-region="${i}"><b>${i+1}. ${r[0]}</b><small>25 fases • 100 chefes</small></button>`).join('');$$('[data-region]').forEach(b=>b.onclick=()=>{state.region=+b.dataset.region;buildPhases();show('region');save()})}
 function buildPhases(){const g=$('#phaseGrid');if(!g)return;$('#regionTitle').textContent=REGIONS[state.region][0];$('#regionEyebrow').textContent=`REGIÃO ${state.region+1}/20`;$('#regionDesc').textContent='25 fases, incluindo uma batalha de Guardião a cada ciclo.';$('#regionStats').innerHTML=`<b>25 fases</b><b>100 chefes</b><b>10 raças</b><b>60/90 min</b>`;g.innerHTML=Array.from({length:25},(_,i)=>{const boss=i===24;return `<button class="panel" data-phase="${i}"><b>${boss?'👑':'⚔️'} Fase ${i+1}</b><small>${boss?'Boss • 90 minutos':'Aventura • 60 minutos'}</small></button>`}).join('');$$('[data-phase]').forEach(b=>b.onclick=()=>{state.phase=+b.dataset.phase;show('game');save()})}
 function buildCodex(){const g=$('#bossGrid');if(!g)return;g.innerHTML=Array.from({length:20},(_,r)=>`<article class="panel"><b>${REGIONS[r][0]}</b><p>100 chefes • elementos • arenas • modificadores</p></article>`).join('')}
-function buildInventory(){
-  const g=$('#inventoryGrid'); if(!g)return;
-  const owned=[...new Set(state.inventory)].map(id=>ITEM_BY_ID[id]).filter(Boolean);
-  const equipped=Object.values(state.equipped);
-  const slots=[['arma','Arma'],['armadura','Armadura'],['relíquia','Relíquia']];
-  const slotCards=slots.map(([slot,label])=>{const id=state.equipped[slot],it=ITEM_BY_ID[id];return `<article class="panel equip-slot"><small>${label}</small><b>${it?it.icon+' '+it.name:'— Vazio —'}</b><span>${it?it.rarity+' • Poder +'+it.power:'Nenhum item equipado'}</span></article>`}).join('');
-  g.innerHTML=slotCards + (owned.length?owned.map(it=>`<article class="panel item-card"><div class="icon">${it.icon}</div><h3>${it.name}</h3><p>${it.desc}</p><small>${it.rarity} • Poder +${it.power} • ${ownedCount(it.id)}x</small><button ${it.slot==='consumível'?'disabled':''} data-equip="${it.id}">${isEquipped(it.id)?'✅ Equipado':'⚡ Equipar'}</button></article>`).join(''):`<article class="panel"><h3>Inventário vazio</h3><p>Compre itens nos comerciantes do Santuário.</p></article>`);
-  $$('[data-equip]').forEach(b=>b.onclick=()=>equipItem(b.dataset.equip));
-}
-
+function buildInventory(){const g=$('#inventoryGrid');if(!g)return;const owned=[...new Set(state.inventory)].map(id=>ITEM_BY_ID[id]).filter(Boolean);const slots=[['arma','Arma'],['armadura','Armadura'],['relíquia','Relíquia']];const slotCards=slots.map(([slot,label])=>{const id=state.equipped[slot],it=ITEM_BY_ID[id];return `<article class="panel equip-slot"><small>${label}</small><b>${it?it.icon+' '+it.name:'— Vazio —'}</b><span>${it?it.rarity+' • Poder +'+it.power:'Nenhum item equipado'}</span></article>`}).join('');g.innerHTML=slotCards+(owned.length?owned.map(it=>`<article class="panel item-card"><div class="icon">${it.icon}</div><h3>${it.name}</h3><p>${it.desc}</p><small>${it.rarity} • Poder +${it.power} • ${ownedCount(it.id)}x</small><button ${it.slot==='consumível'?'disabled':''} data-equip="${it.id}">${isEquipped(it.id)?'✅ Equipado':'⚡ Equipar'}</button></article>`).join(''):`<article class="panel"><h3>Inventário vazio</h3><p>Compre itens nos comerciantes do Santuário.</p></article>`);$$('[data-equip]').forEach(b=>b.onclick=()=>equipItem(b.dataset.equip))}
 function buildStats(){const g=$('#statsGrid');if(!g)return;const defeated=Math.max(0,Math.floor(state.xp/20));g.innerHTML=[['Nível',state.level],['XP',state.xp],['Echo Coins',state.coins],['Fragmentos',state.shards],['Região atual',`${state.region+1}/20`],['Fase atual',`${state.phase+1}/25`],['Inimigos derrotados',defeated],['Chefes disponíveis','2.000']].map(([a,b])=>`<article class="panel stat-card"><small>${a}</small><b>${b}</b></article>`).join('')}
-function buildShop(shop){
-  const g=$('#shopGrid'); if(!g)return;
-  const sets={Arsenal:['Espada do Eco','Arco Prismático','Lâmina Solar'],Ferreiro:['Armadura Lúmen','Escudo Guardião','Peitoral de Vhar'],Alquimista:['Poção de Vida','Elixir do Eco','Frasco de Velocidade'],Relíquias:['Amuleto Prismático','Relíquia do Eclipse','Fragmento Antigo']};
-  g.innerHTML=(sets[shop]||sets.Arsenal).map(name=>{const it=SHOP_ITEMS[name];const owned=ownedCount(it.id);return `<article class="panel item-card"><div class="icon">${it.icon}</div><h3>${it.name}</h3><p>${it.desc}</p><small>${it.rarity} • Poder +${it.power}${owned?' • '+owned+'x no inventário':''}</small><button data-buy="${it.name}">💰 Comprar • ${it.price} ✦</button></article>`}).join('');
-  $$('[data-buy]').forEach(b=>b.onclick=()=>buyItem(b.dataset.buy));
-}
-
+function buildShop(shop){const g=$('#shopGrid');if(!g)return;const sets={Arsenal:['Espada do Eco','Arco Prismático','Lâmina Solar'],Ferreiro:['Armadura Lúmen','Escudo Guardião','Peitoral de Vhar'],Alquimista:['Poção de Vida','Elixir do Eco','Frasco de Velocidade'],Relíquias:['Amuleto Prismático','Relíquia do Eclipse','Fragmento Antigo']};g.innerHTML=(sets[shop]||sets.Arsenal).map(name=>{const it=SHOP_ITEMS[name];const owned=ownedCount(it.id);return `<article class="panel item-card"><div class="icon">${it.icon}</div><h3>${it.name}</h3><p>${it.desc}</p><small>${it.rarity} • Poder +${it.power}${owned?' • '+owned+'x no inventário':''}</small><button data-buy="${it.name}">💰 Comprar • ${it.price} ✦</button></article>`}).join('');$$('[data-buy]').forEach(b=>b.onclick=()=>buyItem(b.dataset.buy))}
 function bindUI(){
   $$('[data-action]').forEach(b=>b.onclick=()=>{
     const a=b.dataset.action;

@@ -35,27 +35,23 @@
     </div>
   </header>
 
-  <canvas id="gameCanvas" class="global-world-canvas" aria-hidden="true"></canvas>
   <main id="app" class="hidden">
     <section id="lobby" class="screen active lobby-world-screen">
-      <div id="lobby3D" class="lobby3d" aria-label="Santuário dos Ecos">
-        <div class="l3d-sky"></div><div class="l3d-ground"></div>
-        <div class="l3d-portal"><i></i><b>✦</b><span>PORTAL DOS ECOS</span></div>
-        <div class="l3d-building b-arsenal"><i>⚔</i><b>ARSENAL</b></div>
-        <div class="l3d-building b-forge"><i>🔨</i><b>FERREIRO</b></div>
-        <div class="l3d-building b-alchemy"><i>🧪</i><b>ALQUIMISTA</b></div>
-        <div class="l3d-building b-relic"><i>💎</i><b>RELÍQUIAS</b></div>
-        <div class="l3d-building b-stats"><i>📊</i><b>ESTATÍSTICAS</b></div>
-        <div class="l3d-building b-inventory"><i>🎒</i><b>EQUIPAMENTO</b></div>
-        <div class="l3d-building b-map"><i>🗺️</i><b>MAPA</b></div>
-        <div class="l3d-building b-online"><i>🌐</i><b>ONLINE</b></div>
-        <div id="l3dPlayer" class="l3d-player"><i></i><b></b><span></span></div>
-        <div class="l3d-tree t1">🌲</div><div class="l3d-tree t2">🌲</div><div class="l3d-tree t3">🌲</div><div class="l3d-tree t4">🌲</div>
-      </div>
+      <canvas id="lobbyCanvas"></canvas>
       <div class="lobby-overlay">
         <div class="lobby-title"><p class="eyebrow">SANTUÁRIO DOS ECOS • V5000</p><h1>LOBBY</h1><p>Ande livremente pelo santuário e interaja com os serviços.</p></div>
         <div class="lobby-help">WASD / SETAS <span>mover</span> • Q/E <span>girar câmera</span> • <b>E</b> <span>interagir</span></div>
         <div id="lobbyPrompt" class="lobby-prompt hidden"></div>
+        <aside id="lobbyProfile" class="lobby-profile" aria-label="Perfil do personagem">
+          <div class="profile-head"><div><p class="eyebrow">MEU AVENTUREIRO</p><h2 id="profileName">Aventureiro</h2></div><span class="profile-level">LV <b id="profileLevel">1</b></span></div>
+          <div class="profile-body">
+            <div class="profile-avatar-wrap"><img id="profileAvatar" src="avatar.svg" alt="Imagem do personagem EchoBound"><div class="profile-glow"></div></div>
+            <div class="profile-info">
+              <div class="profile-section"><small>USANDO AGORA</small><div class="equip-mini" id="profileEquipment"></div></div>
+              <div class="profile-section"><small>ESTATÍSTICAS • 0/10</small><div id="profileStats" class="profile-stats"></div></div>
+            </div>
+          </div>
+        </aside>
         <div class="lobby-services">
           <button data-lobby-service="shop" data-shop="Arsenal">⚔ Arsenal</button>
           <button data-lobby-service="shop" data-shop="Ferreiro">🔨 Ferreiro</button>
@@ -69,10 +65,25 @@
       </div>
     </section>
 
-    <section id="lobby2" class="screen map-world-screen">
-      <div class="section-head"><div><p class="eyebrow">ATLAS DE EXPEDIÇÕES</p><h2>Mapa do Mundo</h2><p>Escolha uma das 20 regiões e avance pelas 25 fases de cada território.</p></div><button data-action="lobby">← Voltar ao Lobby</button></div>
-      <div class="map-banner"><b>MAPA DE ECHOBOUND</b><span>20 regiões • 500 fases • 2.000 chefes</span></div>
-      <div id="regionGrid" class="region-grid"></div>
+    <section id="lobby2" class="screen">
+      <div class="dungeon-lobby">
+        <div class="section-head"><div><p class="eyebrow">SANTUÁRIO DOS ECOS</p><h2>Lobby II — Praça da Aventura</h2><p>Um hub em visão isométrica, inspirado no clima de dungeon crawler, com acesso ao mapa e às atividades.</p></div><button data-action="lobby">← Lobby principal</button></div>
+        <div class="iso-scene">
+          <div class="iso-ground"></div>
+          <div class="iso-building merchant forge"><span>⚒</span><b>Ferreiro</b><small>Equipamentos</small></div>
+          <div class="iso-building merchant alchemy"><span>⚗</span><b>Alquimista</b><small>Poções</small></div>
+          <div class="iso-building merchant relic"><span>✦</span><b>Relíquias</b><small>Artefatos</small></div>
+          <div class="iso-portal"><div class="portal-ring">🗺️</div><b>MAPA DO MUNDO</b><small>20 regiões • 500 fases</small></div>
+          <div class="iso-hero">🧍<span>Você</span></div>
+          <div class="iso-table">📜<span>Mapa de expedições</span></div>
+        </div>
+        <div class="lobby2-actions">
+          <button class="primary" data-action="map">🗺️ ABRIR MAPA DE FASES</button>
+          <button data-action="online">🌐 PARTIDA ON-LINE</button>
+          <button data-action="inventory">🎒 EQUIPAMENTO</button>
+          <button data-action="codex">👹 BESTIÁRIO</button>
+        </div>
+      </div>
     </section>
 
     <section id="online" class="screen">
@@ -84,7 +95,10 @@
       </div>
     </section>
 
-
+    <section id="worldMap" class="screen">
+      <div class="section-head"><div><p class="eyebrow">ATLAS</p><h2>Mapa das 20 Regiões</h2></div><button data-action="back">← Lobby</button></div>
+      <div id="regionGrid" class="region-grid"></div>
+    </section>
 
     <section id="region" class="screen">
       <div class="section-head">
@@ -124,7 +138,7 @@
     </section>
 
     <section id="game" class="screen">
-      <canvas id="fallbackCanvas" class="fallback-canvas"></canvas><div id="renderNotice" class="render-notice hidden"></div><div class="quality-panel"><label>QUALIDADE <select id="qualitySelect"><option value="ultra">ULTRA 8K</option><option value="high">ALTA</option><option value="performance">DESEMPENHO</option></select></label><span id="renderStatus">3D • ULTRA 8K</span></div><button id="forceCompat" class="compat-btn hidden">Entrar no modo compatibilidade</button>
+      <canvas id="gameCanvas"></canvas><canvas id="fallbackCanvas" class="fallback-canvas"></canvas><div id="renderNotice" class="render-notice hidden"></div><div class="quality-panel"><label>QUALIDADE <select id="qualitySelect"><option value="ultra">ULTRA 8K</option><option value="high">ALTA</option><option value="performance">DESEMPENHO</option></select></label><span id="renderStatus">3D • ULTRA 8K</span></div><button id="forceCompat" class="compat-btn hidden">Entrar no modo compatibilidade</button>
       <div class="hud">
         <div class="hud-left">
           <div class="player-hud"><div class="avatar"></div><div><b id="hudName">Aventureiro</b><small>LV <span id="hudLevel">1</span></small></div></div>
