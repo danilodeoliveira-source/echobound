@@ -57,6 +57,7 @@ function nearestLobbyService(){let best=null,bd=999;for(const o of lobbyServices
 function updateLobbyPrompt(){if(sceneMode!=='lobby')return;const o=nearestLobbyService(),el=$('#lobbyPrompt');if(!el)return;if(o){el.innerHTML=`<b>E</b> ${o.name}`;el.classList.remove('hidden')}else el.classList.add('hidden')}
 function interactLobby(){const o=nearestLobbyService();if(o)o.action()}
 function renderLobby(){
+  const lp=$('#l3dPlayer'); if(lp){ const sx=Math.max(-42,Math.min(42,player.x*1.35)); const sy=Math.max(-20,Math.min(20,(player.z-8)*.9)); lp.style.transform=`translate(calc(-50% + ${sx}px),calc(-50% + ${sy}px))`; }
   if(!canvas||!gl)return;
   gl.viewport(0,0,canvas.width,canvas.height);
   gl.clearColor(.025,.045,.075,1);
@@ -101,16 +102,24 @@ function attack(){if(attackCD>0)return;attackCD=.28;enemies=enemies.filter(e=>{i
 function echo(){if(echoCD>0)return;echoCD=3;enemies=enemies.filter(e=>{if(Math.hypot(e.x-player.x,e.z-player.z)<8){e.hp-=75;burst(e.x,1,e.z,'#aa82ff')}return e.hp>0});if(boss&&Math.hypot(boss.x-player.x,boss.z-player.z)<9){boss.hp-=22;burst(boss.x,2,boss.z,'#aa82ff')}}
 function render(){if(sceneMode==='lobby'){renderLobby();return}const reg=REGIONS[state.region];gl.clearColor(...colorHex(reg[1]),1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.useProgram(program);gl.uniform3f(gl.getUniformLocation(program,'uLight'),-.4,1,.3);for(let x=-60;x<=60;x+=5)for(let z=-60;z<=60;z+=5)drawCube(x,-.65,z,2,reg[1]);objects.forEach(o=>{if(o.type===0){drawCube(o.x,.9,o.z,.65,reg[2]);drawCube(o.x,2.8,o.z,2.2,reg[1])}else if(o.type===1)drawCube(o.x,.8,o.z,1.1,'#6b7788');else if(o.type===2)drawCube(o.x,.5,o.z,1.4,'#8d5b3f');else if(o.type===3)drawCube(o.x,1,o.z,.8,reg[2]);else drawCube(o.x,.4,o.z,1.6,'#33404e')});enemies.forEach(e=>{drawCube(e.x,1,e.z,1.25,e.color,Math.atan2(player.x-e.x,player.z-e.z));drawCube(e.x,2.15,e.z,.8,e.color)});if(boss){drawCube(boss.x,2,boss.z,3,boss.color);drawCube(boss.x,5,boss.z,1.8,'#ffd166');$('#bossBar').style.width=Math.max(0,boss.hp)+'%';$('#bossHud').classList.remove('hidden');$('#bossName').textContent=boss.name}else $('#bossHud').classList.add('hidden');drawCube(player.x,1.2,player.z,1.15,'#4f9dff',camera.yaw);drawCube(player.x,2.7,player.z,.78,'#d9a47d',camera.yaw);particles.forEach(p=>drawCube(p.x,p.y,p.z,.12,p.col))}
 function startGame(){
-  if(!gl||!program){
-    try{initGL()}catch(err){console.error(err);const n=$('#renderNotice');if(n){n.textContent='3D indisponível: ative a aceleração gráfica/WebGL.';n.classList.remove('hidden')}return}
+  let webglReady=!!(gl&&program);
+  if(!webglReady){
+    try{initGL();webglReady=!!(gl&&program)}catch(err){
+      console.warn('WebGL indisponível; usando apresentação compatível.',err);
+      gl=null; program=null;
+      const n=$('#renderNotice');
+      if(n){n.textContent='Modo compatibilidade ativo.';n.classList.remove('hidden')}
+    }
   }
-  if(sceneMode==='lobby') setupLobby(); else setupWorld();
+  if(sceneMode==='lobby') setupLobby(); else if(webglReady) setupWorld(); else {
+    const n=$('#renderNotice'); if(n){n.textContent='3D indisponível nesta máquina. O Lobby continua jogável em modo compatibilidade.';n.classList.remove('hidden')}
+  }
   gameRunning=true;
   last=performance.now();
   cancelAnimationFrame(raf);
   raf=requestAnimationFrame(loop);
 }
-function loop(now){if(!gameRunning)return;const dt=Math.min(.033,(now-last)/1000||.016);last=now;if($('#pauseMenu').classList.contains('hidden')){update(dt);render()}raf=requestAnimationFrame(loop)}
+function loop(now){if(!gameRunning)return;const dt=Math.min(.033,(now-last)/1000||.016);last=now;if($('#pauseMenu').classList.contains('hidden')){update(dt);try{render()}catch(err){console.error('EchoBound render error',err);gl=null;program=null;}}raf=requestAnimationFrame(loop)}
 function save(){try{localStorage.setItem('echobound_v5000',JSON.stringify(state))}catch{}}
 function updateHUD(){const phase=state.phase+1,bossPhase=state.phase%25===24;$('#hudName').textContent=state.name;$('#hudLevel').textContent=state.level;$('#hudCoins').textContent=state.coins;$('#hudShards').textContent=state.shards;$('#regionHud').textContent=REGIONS[state.region][0];$('#phaseHud').textContent=`FASE ${phase}/25`;$('#objective').textContent=bossPhase?'Derrote o Guardião':'Explore, lute e encontre o próximo eco';$('#hpBar').style.width=player.hp+'%';$('#xpBar').style.width=(state.xp%100)+'%';$('#chapterLabel').textContent=bossPhase?'CAPÍTULO BOSS':'CAPÍTULO '+((state.phase%6)+1)+'/6';$('#timerLabel').textContent=bossPhase?'90:00':'60:00'}
 function show(id){
