@@ -1,0 +1,8 @@
+{
+  "regioes": 12,
+  "fases": 360,
+  "chefes": 1200,
+  "duracao_sem_boss_min": 60,
+  "duracao_com_boss_min": 90,
+  "racas_inimigas": 10
+}

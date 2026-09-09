@@ -1,0 +1,13 @@
+{
+  "version":"V5000",
+  "regions":20,
+  "phases":500,
+  "bosses":2000,
+  "bosses_per_region":100,
+  "phases_per_region":25,
+  "normal_phase_minutes":60,
+  "boss_phase_minutes":90,
+  "enemy_races":10,
+  "github_pages_ready":true,
+  "renderer":"native-webgl"
+}

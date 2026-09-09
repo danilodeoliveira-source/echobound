@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>EchoBound V5000 — World of Echoes</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="boot"><div class="boot-logo">ECHOBOUND <span>V5000</span></div><div class="boot-bar"><i></i></div><small>CARREGANDO MUNDO DE ECHOS...</small></div>
+
+  <section id="auth" class="auth-screen hidden">
+    <div class="auth-card">
+      <div class="brand auth-brand">ECHOBOUND <b>V5000</b></div>
+      <p class="eyebrow">WORLD OF ECHOES</p>
+      <h1 id="authTitle">Entrar no EchoBound</h1>
+      <p id="authSub">Entre para salvar seu aventureiro e acessar as partidas on-line.</p>
+      <label>E-mail ou usuário<input id="authUser" autocomplete="username" placeholder="seu usuário"></label>
+      <label>Senha<input id="authPass" type="password" autocomplete="current-password" placeholder="••••••••"></label>
+      <label id="authConfirmWrap" class="hidden">Confirmar senha<input id="authPass2" type="password" autocomplete="new-password" placeholder="••••••••"></label>
+      <button class="primary" id="authSubmit">ENTRAR</button>
+      <button id="authToggle">Criar nova conta</button>
+      <button class="ghost" id="guestBtn">Jogar como convidado</button>
+      <small id="authMsg"></small>
+    </div>
+  </section>
+
+  <header id="topbar" class="hidden">
+    <div class="brand">ECHOBOUND <b>V5000</b></div>
+    <div class="player-mini">
+      <span id="playerName">Aventureiro</span>
+      <span>LV <b id="level">1</b></span>
+      <span>✦ <b id="coins">250</b></span>
+      <span>◆ <b id="shards">20</b></span>
+    </div>
+  </header>
+
+  <main id="app" class="hidden">
+    <canvas id="gameCanvas" class="global-world-canvas" aria-hidden="true"></canvas>
+    <section id="lobby" class="screen active lobby-world-screen">
+      <div class="lobby-overlay">
+        <div class="lobby-title"><p class="eyebrow">SANTUÁRIO DOS ECOS • V5000</p><h1>LOBBY</h1><p>Ande livremente pelo santuário e interaja com os serviços.</p></div>
+        <div class="lobby-help">WASD / SETAS <span>mover</span> • Q/E <span>girar câmera</span> • <b>E</b> <span>interagir</span></div>
+        <div id="lobbyPrompt" class="lobby-prompt hidden"></div>
+        <div class="lobby-services">
+          <button data-lobby-service="shop" data-shop="Arsenal">⚔ Arsenal</button>
+          <button data-lobby-service="shop" data-shop="Ferreiro">🔨 Ferreiro</button>
+          <button data-lobby-service="shop" data-shop="Alquimista">🧪 Alquimista</button>
+          <button data-lobby-service="shop" data-shop="Relíquias">💎 Relíquias</button>
+          <button data-lobby-service="inventory">🎒 Equipamento</button>
+          <button data-lobby-service="stats">📊 Estatísticas</button>
+          <button data-lobby-service="map">🗺️ Mapa</button>
+          <button data-lobby-service="online">🌐 Partida On-line</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="lobby2" class="screen map-world-screen">
+      <div class="section-head"><div><p class="eyebrow">ATLAS DE EXPEDIÇÕES</p><h2>Mapa do Mundo</h2><p>Escolha uma das 20 regiões e avance pelas 25 fases de cada território.</p></div><button data-action="lobby">← Voltar ao Lobby</button></div>
+      <div class="map-banner"><b>MAPA DE ECHOBOUND</b><span>20 regiões • 500 fases • 2.000 chefes</span></div>
+      <div id="regionGrid" class="region-grid"></div>
+    </section>
+
+    <section id="online" class="screen">
+      <div class="section-head"><div><p class="eyebrow">MULTIJOGADOR</p><h2>Partida On-line</h2><p>Crie uma sala ou entre com um código de partida.</p></div><button data-action="lobby2">← Lobby II</button></div>
+      <div class="online-grid">
+        <article class="panel online-card"><h2>🎮 Criar sala</h2><p>Abra uma expedição para até 4 aventureiros.</p><input id="roomName" placeholder="Nome da sala"><select id="onlineMode"><option>Cooperação</option><option>Boss Rush</option><option>Expedição</option></select><button class="primary" id="createRoom">CRIAR PARTIDA</button></article>
+        <article class="panel online-card"><h2>🔑 Entrar em sala</h2><p>Digite o código recebido do anfitrião.</p><input id="joinCode" placeholder="EX: ECHO-7K2P"><button id="joinRoom">ENTRAR NA PARTIDA</button></article>
+        <article class="panel wide"><div class="online-status"><span id="onlineDot">●</span><div><b id="onlineStatus">Modo on-line pronto</b><small id="onlineDetails">O servidor de partidas será conectado quando a URL WebSocket for configurada.</small></div></div><div id="roomPanel" class="room-panel hidden"><h3 id="roomTitle">Sala</h3><div id="roomCodeView"></div><div id="partySlots"></div><button class="primary" id="startOnline">INICIAR EXPEDIÇÃO</button></div></article>
+      </div>
+    </section>
+
+
+
+    <section id="region" class="screen">
+      <div class="section-head">
+        <div><p class="eyebrow" id="regionEyebrow">REGIÃO</p><h2 id="regionTitle">Região</h2><p id="regionDesc"></p></div>
+        <button data-action="map">← Regiões</button>
+      </div>
+      <div class="region-stats" id="regionStats"></div>
+      <div class="phase-toolbar">
+        <button class="filter active" data-filter="all">Todas</button>
+        <button class="filter" data-filter="normal">Fases</button>
+        <button class="filter" data-filter="boss">Chefes</button>
+        <button class="filter" data-filter="event">Eventos</button>
+        <input id="phaseSearch" placeholder="Buscar fase...">
+      </div>
+      <div id="phaseGrid" class="phase-grid"></div>
+    </section>
+
+    <section id="codex" class="screen">
+      <div class="section-head"><div><p class="eyebrow">CODEX</p><h2>Bestiário dos 2.000 Chefes</h2></div><button data-action="back">← Lobby</button></div>
+      <div class="codex-note">Cada região possui 100 chefes com nome, elemento, comportamento, arena, recompensas e modificadores próprios.</div>
+      <div id="bossGrid" class="boss-grid"></div>
+    </section>
+
+    <section id="inventory" class="screen">
+      <div class="section-head"><div><p class="eyebrow">EQUIPAMENTO</p><h2>Inventário & Relíquias</h2></div><button data-action="back">← Lobby</button></div>
+      <div id="inventoryGrid" class="inventory-grid"></div>
+    </section>
+
+    <section id="stats" class="screen">
+      <div class="section-head"><div><p class="eyebrow">PERFIL DO AVENTUREIRO</p><h2>Estatísticas</h2><p>Seu progresso e desempenho no EchoBound.</p></div><button data-action="lobby">← Voltar ao Lobby</button></div>
+      <div class="stats-grid" id="statsGrid"></div>
+    </section>
+
+    <section id="shop" class="screen">
+      <div class="section-head"><div><p class="eyebrow">COMÉRCIO</p><h2 id="shopTitle">Mercador</h2></div><button data-action="back">← Lobby</button></div>
+      <div id="shopGrid" class="shop-grid"></div>
+    </section>
+
+    <section id="game" class="screen">
+      <canvas id="fallbackCanvas" class="fallback-canvas"></canvas><div id="renderNotice" class="render-notice hidden"></div><div class="quality-panel"><label>QUALIDADE <select id="qualitySelect"><option value="ultra">ULTRA 8K</option><option value="high">ALTA</option><option value="performance">DESEMPENHO</option></select></label><span id="renderStatus">3D • ULTRA 8K</span></div><button id="forceCompat" class="compat-btn hidden">Entrar no modo compatibilidade</button>
+      <div class="hud">
+        <div class="hud-left">
+          <div class="player-hud"><div class="avatar"></div><div><b id="hudName">Aventureiro</b><small>LV <span id="hudLevel">1</span></small></div></div>
+          <div class="bar hp"><i id="hpBar"></i></div>
+          <div class="bar xp"><i id="xpBar"></i></div>
+        </div>
+        <div class="mission"><small id="regionHud">REGIÃO</small><b id="phaseHud">FASE</b><span id="objective">Explore a área</span></div>
+        <div class="hud-right"><div>✦ <b id="hudCoins">250</b></div><div>◆ <b id="hudShards">20</b></div></div>
+      </div>
+      <div id="bossHud" class="boss-hud hidden"><b id="bossName">BOSS</b><div class="bar boss"><i id="bossBar"></i></div><small id="bossMods"></small></div>
+      <div id="combatHint">WASD / SETAS • ESPAÇO ATAQUE • SHIFT DASH • E ECO</div>
+      <div id="chapterHud" class="chapter-hud"><span id="chapterLabel">CAPÍTULO 1/6</span><b id="timerLabel">60:00</b><small id="encounterLabel">Exploração</small></div>
+      <div id="quizModal" class="modal hidden"><div class="modal-card"><p class="eyebrow">DESAFIO DE CONHECIMENTO</p><h2 id="quizQuestion">Pergunta</h2><div id="quizChoices"></div><p id="quizResult"></p></div></div>
+      <button id="pauseBtn" class="pause" data-action="pause">Ⅱ</button>
+      <div id="pauseMenu" class="modal hidden">
+        <div class="modal-card"><p class="eyebrow">PAUSA</p><h2>EchoBound</h2><button data-action="resume">Continuar</button><button data-action="restart">Reiniciar fase</button><button data-action="map">Sair para o mapa</button></div>
+      </div>
+      <div id="victory" class="modal hidden">
+        <div class="modal-card victory-card"><p class="eyebrow">ECO CONQUISTADO</p><h2 id="victoryTitle">Vitória!</h2><p id="victoryText"></p><button class="primary" data-action="next">Próxima fase</button><button data-action="map">Voltar ao mapa</button></div>
+      </div>
+    </section>
+  </main>
+
+  <nav id="dock" class="hidden">
+    <button data-action="map">🗺️<small>Mapa</small></button>
+    <button data-action="online">🌐<small>Online</small></button>
+    <button data-action="codex">👹<small>Chefes</small></button>
+    <button data-action="inventory">🎒<small>Inventário</small></button>
+    <button data-action="lobby">🏠<small>Lobby</small></button>
+  </nav>
+
+  <script src="config.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
