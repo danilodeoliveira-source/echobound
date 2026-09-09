@@ -1,22 +1,15 @@
-ECHOBOUND V5000 — 3D ULTRA
+EchoBound vMetaModel2027 — Final Edition
 
-Build: V5000
-Plataforma: navegador / GitHub Pages
-Render: WebGL nativo, sem CDN obrigatório
-Conteúdo: 20 regiões, 500 fases, 2.000 chefes, 10 raças inimigas.
-Duração-alvo: fases normais 60 min; fases Boss 90 min.
+Publicação: o pacote é estático e compatível com GitHub Pages/Hostinger.
 
-GitHub Pages:
-1. Envie todos os arquivos deste pacote para a raiz do repositório.
-2. Use branch main.
-3. Settings > Pages > Source: GitHub Actions.
-4. O workflow .github/workflows/pages.yml publica automaticamente a cada push.
+Estrutura: index.html, style.css, game.js, config.js, .nojekyll e workflow GitHub Pages.
 
-Observação: “ULTRA 8K” é um alvo de qualidade/renderização adaptativa; a resolução efetiva depende da tela e GPU.
+Conteúdo final: 20 regiões, 500 fases, 2.000 encontros de chefe (4 por fase), compras, inventário, equipamentos, missões, conquistas, estilos, Essência do Eco, combo, dash, parry, sobrecarga, pausa, salvamento local, catálogo de chefes, modo online (estrutura) e perfil Ultra 8K adaptativo.
 
-V5000 — LOBBY II / LOGIN / ONLINE
-- Login e criação de conta local usando SHA-256 via Web Crypto.
-- Lobby II com hub isométrico e acesso ao mapa das 20 regiões.
-- Partida On-line: criação/entrada por código e estrutura pronta para WebSocket.
-- Para multiplayer real, edite config.js e informe a URL wss:// do servidor.
-- GitHub Pages hospeda o front-end; o servidor multiplayer deve ser hospedado separadamente.
+Anti-hack: validação de limites, itens/equipamentos, integridade do save, proteção contra duplicação de recompensas e telemetria local. Como todo jogo puramente client-side, isso NÃO substitui servidor autoritativo: moedas, inventário e ranking competitivos devem ser validados no backend antes de uma operação pública competitiva.
+
+8K: o perfil ULTRA 8K tenta usar até 7680x4320 e reduz automaticamente quando a memória de framebuffer seria excessiva. O suporte real depende do GPU/navegador.
+
+QA: runQA() verifica a contagem de 500 fases e 2.000 encontros de chefe por simulação determinística. Isso não é uma alegação de que o modelo humano percorreu literalmente 500 fases em tempo real.
+
+Deploy: faça push da raiz para main e deixe GitHub Actions publicar em Pages. O workflow usa configure-pages + upload-pages-artifact + deploy-pages.

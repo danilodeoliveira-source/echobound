@@ -3,15 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>EchoBound V5000 — World of Echoes</title>
+  <title>EchoBound vMetaModel2027 — Final Edition</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="boot"><div class="boot-logo">ECHOBOUND <span>V5000</span></div><div class="boot-bar"><i></i></div><small>CARREGANDO MUNDO DE ECHOS...</small></div>
+  <div id="boot"><div class="boot-logo">ECHOBOUND <span>vMetaModel2027 FINAL</span></div><div class="boot-bar"><i></i></div><small>CARREGANDO MUNDO DE ECHOS...</small></div>
 
   <section id="auth" class="auth-screen hidden">
     <div class="auth-card">
-      <div class="brand auth-brand">ECHOBOUND <b>V5000</b></div>
+      <div class="brand auth-brand">ECHOBOUND <b>vMetaModel2027</b></div>
       <p class="eyebrow">WORLD OF ECHOES</p>
       <h1 id="authTitle">Entrar no EchoBound</h1>
       <p id="authSub">Entre para salvar seu aventureiro e acessar as partidas on-line.</p>
@@ -26,12 +26,12 @@
   </section>
 
   <header id="topbar" class="hidden">
-    <div class="brand">ECHOBOUND <b>V5000</b></div>
+    <div class="brand">ECHOBOUND <b>vMetaModel2027</b></div>
     <div class="player-mini">
       <span id="playerName">Aventureiro</span>
       <span>LV <b id="level">1</b></span>
       <span>✦ <b id="coins">250</b></span>
-      <span>◆ <b id="shards">20</b></span>
+      <span>◆ <b id="shards">20</b></span><span>◈ <b id="essence">0</b></span>
     </div>
   </header>
 
@@ -39,19 +39,9 @@
     <section id="lobby" class="screen active lobby-world-screen">
       <canvas id="lobbyCanvas"></canvas>
       <div class="lobby-overlay">
-        <div class="lobby-title"><p class="eyebrow">SANTUÁRIO DOS ECOS • V5000</p><h1>LOBBY</h1><p>Ande livremente pelo santuário e interaja com os serviços.</p></div>
+        <div class="lobby-title"><p class="eyebrow">SANTUÁRIO DOS ECOS • vMetaModel2027 FINAL</p><h1>LOBBY</h1><p>Ande livremente pelo santuário e interaja com os serviços.</p></div>
         <div class="lobby-help">WASD / SETAS <span>mover</span> • Q/E <span>girar câmera</span> • <b>E</b> <span>interagir</span></div>
         <div id="lobbyPrompt" class="lobby-prompt hidden"></div>
-        <aside id="lobbyProfile" class="lobby-profile" aria-label="Perfil do personagem">
-          <div class="profile-head"><div><p class="eyebrow">MEU AVENTUREIRO</p><h2 id="profileName">Aventureiro</h2></div><span class="profile-level">LV <b id="profileLevel">1</b></span></div>
-          <div class="profile-body">
-            <div class="profile-avatar-wrap"><img id="profileAvatar" src="avatar.svg" alt="Imagem do personagem EchoBound"><div class="profile-glow"></div></div>
-            <div class="profile-info">
-              <div class="profile-section"><small>USANDO AGORA</small><div class="equip-mini" id="profileEquipment"></div></div>
-              <div class="profile-section"><small>ESTATÍSTICAS • 0/10</small><div id="profileStats" class="profile-stats"></div></div>
-            </div>
-          </div>
-        </aside>
         <div class="lobby-services">
           <button data-lobby-service="shop" data-shop="Arsenal">⚔ Arsenal</button>
           <button data-lobby-service="shop" data-shop="Ferreiro">🔨 Ferreiro</button>
@@ -60,7 +50,7 @@
           <button data-lobby-service="inventory">🎒 Equipamento</button>
           <button data-lobby-service="stats">📊 Estatísticas</button>
           <button data-lobby-service="map">🗺️ Mapa</button>
-          <button data-lobby-service="online">🌐 Partida On-line</button>
+          <button data-lobby-service="online">🌐 Partida On-line</button><button data-lobby-service="deluxe">◈ Laboratório do Eco</button>
         </div>
       </div>
     </section>
@@ -137,8 +127,33 @@
       <div id="shopNotice" class="shop-notice hidden"></div><div id="shopGrid" class="shop-grid"></div>
     </section>
 
+
+    <section id="deluxe" class="screen">
+      <div class="section-head"><div><p class="eyebrow">vMetaModel2027 FINAL</p><h2>Laboratório do Eco</h2><p>Desbloqueie técnicas novas, mude seu estilo e ative sinergias de combate.</p></div><button data-action="back">← Lobby</button></div>
+      <div class="deluxe-grid">
+        <article class="panel"><p class="eyebrow">RECURSOS</p><h3>Essência do Eco</h3><div class="deluxe-resource"><b id="deluxeEssence">0</b><small>gerada em combate, parries e eventos</small></div><button data-deluxe="resonance">⚡ Ativar Ressonância</button></article>
+        <article class="panel"><p class="eyebrow">TÉCNICAS</p><h3>Árvore de Técnicas</h3><div id="skillGrid" class="skill-grid"></div></article>
+        <article class="panel"><p class="eyebrow">ESTILO</p><h3>Estilo de combate</h3><div id="combatStyle"></div><button data-deluxe="style">🔄 Alternar Estilo</button></article>
+        <article class="panel"><p class="eyebrow">RESSONÂNCIA</p><h3 id="resonanceTitle">Ressonância Inativa</h3><p id="resonanceText">Ative o estado para fortalecer golpes e criar uma janela de invulnerabilidade.</p><div class="progress"><i id="resonanceBar" style="width:0%"></i></div></article>
+      </div>
+    </section>
+
+    <section id="release" class="screen">
+      <div class="section-head"><div><p class="eyebrow">RELEASE FINAL</p><h2>Central vMetaModel2027</h2><p>Integridade, desempenho, anti-tamper e estado da versão publicada.</p></div><button data-action="lobby">← Voltar ao Lobby</button></div>
+      <div class="release-grid">
+        <article class="panel"><p class="eyebrow">BUILD</p><h3 id="releaseBuild">vMetaModel2027 FINAL</h3><p id="releaseBuildInfo">500 fases • 20 regiões • 2.000 encontros de chefe projetados.</p><span class="release-ok">● Pronto para publicação estática</span></article>
+        <article class="panel"><p class="eyebrow">ANTI-TAMPER</p><h3 id="antiTamperStatus">Proteção ativa</h3><p id="antiTamperText">Validação de estado, limites, ações e integridade local.</p><span id="antiTamperScore" class="release-score">0 alertas</span></article>
+        <article class="panel"><p class="eyebrow">ULTRA + DIFICULDADE</p><h3>Renderização adaptativa</h3><p>Perfil ULTRA 8K com teto de 7680×4320 quando o hardware suportar, com fallback automático.</p><select id="releaseQuality"><option value="ultra8k">ULTRA 8K</option><option value="ultra">ULTRA adaptativo</option><option value="high">ALTA</option><option value="performance">DESEMPENHO</option></select><select id="difficultySelect"><option>Fácil</option><option selected>Normal</option><option>Difícil</option><option>Pesadelo</option></select></article>
+        <article class="panel"><p class="eyebrow">QA</p><h3>Verificação local</h3><div id="qaResults" class="qa-list"><div>Inicializando testes…</div></div><button data-action="runQA">RODAR DIAGNÓSTICO</button></article>
+      </div>
+    </section>
+
+    <section id="missions" class="screen">
+      <div class="section-head"><div><p class="eyebrow">PROGRESSÃO vMetaModel2027</p><h2>Missões & Conquistas</h2><p>Objetivos dinâmicos que recompensam sua aventura.</p></div><button data-action="back">← Lobby</button></div>
+      <div class="mission-grid" id="missionGrid"></div>
+    </section>
     <section id="game" class="screen">
-      <canvas id="gameCanvas"></canvas><canvas id="fallbackCanvas" class="fallback-canvas"></canvas><div id="renderNotice" class="render-notice hidden"></div><div class="quality-panel"><label>QUALIDADE <select id="qualitySelect"><option value="ultra">ULTRA 8K</option><option value="high">ALTA</option><option value="performance">DESEMPENHO</option></select></label><span id="renderStatus">3D • ULTRA 8K</span></div><button id="forceCompat" class="compat-btn hidden">Entrar no modo compatibilidade</button>
+      <canvas id="gameCanvas"></canvas><canvas id="fallbackCanvas" class="fallback-canvas"></canvas><div id="renderNotice" class="render-notice hidden"></div><div class="quality-panel"><label>QUALIDADE <select id="qualitySelect"><option value="ultra8k">ULTRA 8K</option><option value="ultra">ULTRA ADAPTATIVO</option><option value="high">ALTA</option><option value="performance">DESEMPENHO</option></select></label><span id="renderStatus">3D • ULTRA 8K</span></div><button id="forceCompat" class="compat-btn hidden">Entrar no modo compatibilidade</button>
       <div class="hud">
         <div class="hud-left">
           <div class="player-hud"><div class="avatar"></div><div><b id="hudName">Aventureiro</b><small>LV <span id="hudLevel">1</span></small></div></div>
@@ -146,12 +161,13 @@
           <div class="bar xp"><i id="xpBar"></i></div>
         </div>
         <div class="mission"><small id="regionHud">REGIÃO</small><b id="phaseHud">FASE</b><span id="objective">Explore a área</span></div>
-        <div class="hud-right"><div>✦ <b id="hudCoins">250</b></div><div>◆ <b id="hudShards">20</b></div></div>
+        <div class="hud-right"><div>✦ <b id="hudCoins">250</b></div><div>◆ <b id="hudShards">20</b></div><div>◈ <b id="hudEssence">0</b></div><div>🔥 <b id="comboLabel">0</b></div></div>
       </div>
       <div id="bossHud" class="boss-hud hidden"><b id="bossName">BOSS</b><div class="bar boss"><i id="bossBar"></i></div><small id="bossMods"></small></div>
-      <div id="combatHint">WASD / SETAS • ESPAÇO ATAQUE • SHIFT DASH • E ECO</div>
+      <div id="combatHint">WASD / SETAS • ESPAÇO ATAQUE • SHIFT DASH • R ECO • F ESPECIAL • C PARRY</div>
       <div id="chapterHud" class="chapter-hud"><span id="chapterLabel">CAPÍTULO 1/6</span><b id="timerLabel">60:00</b><small id="encounterLabel">Exploração</small></div>
       <div id="quizModal" class="modal hidden"><div class="modal-card"><p class="eyebrow">DESAFIO DE CONHECIMENTO</p><h2 id="quizQuestion">Pergunta</h2><div id="quizChoices"></div><p id="quizResult"></p></div></div>
+      <div id="cutscene" class="modal hidden"><div class="modal-card"><p class="eyebrow" id="cutsceneEyebrow">ECHOBOUND</p><h2 id="cutsceneTitle">O Eco despertou</h2><p id="cutsceneText">A jornada começa.</p><button class="primary" id="cutsceneContinue">CONTINUAR</button></div></div>
       <button id="pauseBtn" class="pause" data-action="pause">Ⅱ</button>
       <div id="pauseMenu" class="modal hidden">
         <div class="modal-card"><p class="eyebrow">PAUSA</p><h2>EchoBound</h2><button data-action="resume">Continuar</button><button data-action="restart">Reiniciar fase</button><button data-action="map">Sair para o mapa</button></div>
@@ -166,7 +182,8 @@
     <button data-action="map">🗺️<small>Mapa</small></button>
     <button data-action="online">🌐<small>Online</small></button>
     <button data-action="codex">👹<small>Chefes</small></button>
-    <button data-action="inventory">🎒<small>Inventário</small></button>
+    <button data-action="missions">📜<small>Missões</small></button><button data-action="deluxe">◈<small>Deluxe</small></button>
+    <button data-action="inventory">🎒<small>Inventário</small></button><button data-action="release">🛠️<small>Release</small></button>
     <button data-action="lobby">🏠<small>Lobby</small></button>
   </nav>
 

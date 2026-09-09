@@ -1,4 +1,2 @@
-/* EchoBound V5000 — opcional: servidor multiplayer real.
-   Exemplo: window.ECHOBOUND_CONFIG={wsUrl:'wss://seu-servidor.example'};
-   Deixe vazio para usar o lobby online em modo demonstração/local. */
-window.ECHOBOUND_CONFIG={wsUrl:''};
+/* vMetaModel2027 FINAL. Configure ECHOBOUND_CONFIG.wsUrl for an authoritative multiplayer backend. */
+window.ECHOBOUND_CONFIG={wsUrl:'',build:'vMetaModel2027-FINAL'};
