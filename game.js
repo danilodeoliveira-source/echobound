@@ -13,7 +13,7 @@ let authMode='login', currentRoom=null, socket=null;
 const ONLINE_WS_URL=(window.ECHOBOUND_CONFIG&&window.ECHOBOUND_CONFIG.wsUrl)||'';
 let player={x:0,y:1.2,z:8,hp:100},enemies=[],boss=null,particles=[],objects=[]; let camera={yaw:0,pitch:.32,dist:13}; let sceneMode='lobby'; let lobbyServices=[];
 const VS=`attribute vec3 aPos,aNormal,aColor;uniform mat4 uMVP,uModel;uniform vec3 uLight;varying vec3 vColor;varying float vLight;void main(){vec3 n=normalize((uModel*vec4(aNormal,0.)).xyz);vLight=max(.2,dot(n,normalize(uLight))*.72+.28);vColor=aColor;gl_Position=uMVP*vec4(aPos,1.);}`;
-const FS=`precision mediump float;varying vec3 vColor;varying float vLight;void main(){vec3 c=vColor*vLight;float d=gl_FragCoord.z;c=mix(c,vec3(.01,.02,.035),smoothstep(.72,1.,d));gl_FragColor=vec4(c,1.);}`;
+const FS=`precision mediump float;varying vec3 vColor;varying float vLight;void main(){vec3 c=max(vColor*vLight,vec3(.025));gl_FragColor=vec4(c,1.);}`;
 const cubePos=new Float32Array([-0.5,-0.5,-0.5, 0.5,-0.5,-0.5, 0.5,0.5,-0.5, -0.5,0.5,-0.5, -0.5,-0.5,0.5, 0.5,-0.5,0.5, 0.5,0.5,0.5, -0.5,0.5,0.5, -0.5,-0.5,-0.5, -0.5,0.5,-0.5, -0.5,0.5,0.5, -0.5,-0.5,0.5, 0.5,-0.5,-0.5, 0.5,-0.5,0.5, 0.5,0.5,0.5, 0.5,0.5,-0.5, -0.5,-0.5,-0.5, -0.5,-0.5,0.5, 0.5,-0.5,0.5, 0.5,-0.5,-0.5, -0.5,0.5,-0.5, 0.5,0.5,-0.5, 0.5,0.5,0.5, -0.5,0.5,0.5]);
 const cubeNorm=[];for(let i=0;i<6;i++){const n=[[0,0,-1],[0,0,1],[-1,0,0],[1,0,0],[0,-1,0],[0,1,0]][i];for(let j=0;j<4;j++)cubeNorm.push(...n)}
 const idx=new Uint16Array([0,1,2,0,2,3,4,5,6,4,6,7,8,9,10,8,10,11,12,13,14,12,14,15,16,17,18,16,18,19,20,21,22,20,22,23]);
@@ -26,7 +26,7 @@ function translate(m,x,y,z){const o=new Float32Array(m);o[12]+=m[0]*x+m[4]*y+m[8
 function scale(m,x,y,z){const o=new Float32Array(m);for(let i=0;i<4;i++){o[i]*=x;o[4+i]*=y;o[8+i]*=z}return o}
 function rotY(m,a){const c=Math.cos(a),s=Math.sin(a),o=new Float32Array(m);for(let r=0;r<4;r++){const x=m[r],z=m[8+r];o[r]=x*c-z*s;o[8+r]=x*s+z*c}return o}
 function colorHex(h){const n=parseInt(h.slice(1),16);return[(n>>16&255)/255,(n>>8&255)/255,(n&255)/255]}
-function initGL(){canvas=$('#gameCanvas'); gl=canvas.getContext('webgl',{antialias:true,alpha:false})||canvas.getContext('experimental-webgl');if(!gl)throw Error('WebGL não disponível');const vs=gl.createShader(gl.VERTEX_SHADER);gl.shaderSource(vs,VS);gl.compileShader(vs);if(!gl.getShaderParameter(vs,gl.COMPILE_STATUS))throw Error('Vertex shader: '+gl.getShaderInfoLog(vs));const fs=gl.createShader(gl.FRAGMENT_SHADER);gl.shaderSource(fs,FS);gl.compileShader(fs);if(!gl.getShaderParameter(fs,gl.COMPILE_STATUS))throw Error('Fragment shader: '+gl.getShaderInfoLog(fs));program=gl.createProgram();gl.attachShader(program,vs);gl.attachShader(program,fs);gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error('Falha no shader');gl.useProgram(program);pBuf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,pBuf);gl.bufferData(gl.ARRAY_BUFFER,cubePos,gl.STATIC_DRAW);let a=gl.getAttribLocation(program,'aPos');gl.enableVertexAttribArray(a);gl.vertexAttribPointer(a,3,gl.FLOAT,false,0,0);nBuf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,nBuf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(cubeNorm),gl.STATIC_DRAW);a=gl.getAttribLocation(program,'aNormal');gl.enableVertexAttribArray(a);gl.vertexAttribPointer(a,3,gl.FLOAT,false,0,0);iBuf=gl.createBuffer();gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,iBuf);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,idx,gl.STATIC_DRAW);cBuf=gl.createBuffer();uMVP=gl.getUniformLocation(program,'uMVP');uModel=gl.getUniformLocation(program,'uModel');aColorLoc=gl.getAttribLocation(program,'aColor');gl.enable(gl.DEPTH_TEST);gl.enable(gl.CULL_FACE);resize()}
+function initGL(){canvas=$('#gameCanvas'); gl=canvas.getContext('webgl',{antialias:true,alpha:false})||canvas.getContext('experimental-webgl');if(!gl)throw Error('WebGL não disponível');const vs=gl.createShader(gl.VERTEX_SHADER);gl.shaderSource(vs,VS);gl.compileShader(vs);if(!gl.getShaderParameter(vs,gl.COMPILE_STATUS))throw Error('Vertex shader: '+gl.getShaderInfoLog(vs));const fs=gl.createShader(gl.FRAGMENT_SHADER);gl.shaderSource(fs,FS);gl.compileShader(fs);if(!gl.getShaderParameter(fs,gl.COMPILE_STATUS))throw Error('Fragment shader: '+gl.getShaderInfoLog(fs));program=gl.createProgram();gl.attachShader(program,vs);gl.attachShader(program,fs);gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error('Falha no shader');gl.useProgram(program);pBuf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,pBuf);gl.bufferData(gl.ARRAY_BUFFER,cubePos,gl.STATIC_DRAW);let a=gl.getAttribLocation(program,'aPos');gl.enableVertexAttribArray(a);gl.vertexAttribPointer(a,3,gl.FLOAT,false,0,0);nBuf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,nBuf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(cubeNorm),gl.STATIC_DRAW);a=gl.getAttribLocation(program,'aNormal');gl.enableVertexAttribArray(a);gl.vertexAttribPointer(a,3,gl.FLOAT,false,0,0);iBuf=gl.createBuffer();gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,iBuf);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,idx,gl.STATIC_DRAW);cBuf=gl.createBuffer();uMVP=gl.getUniformLocation(program,'uMVP');uModel=gl.getUniformLocation(program,'uModel');aColorLoc=gl.getAttribLocation(program,'aColor');gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);gl.disable(gl.CULL_FACE);gl.clearDepth(1);resize()}
 function resize(){if(!gl)return; canvas=$('#gameCanvas'); if(!canvas)return;const q=state.quality==='ultra'?1:state.quality==='high'?.8:.6,d=Math.min(devicePixelRatio||1,2.5);canvas.width=Math.max(1,innerWidth*d*q);canvas.height=Math.max(1,innerHeight*d*q);canvas.style.width=innerWidth+'px';canvas.style.height=innerHeight+'px';gl.viewport(0,0,canvas.width,canvas.height)}
 function drawCube(x,y,z,s,col,ry=0){let m=ident(mat4());m=translate(m,x,y,z);m=rotY(m,ry);m=scale(m,s,s,s);const eye=[player.x+Math.sin(camera.yaw)*camera.dist,7+camera.pitch*8,player.z+Math.cos(camera.yaw)*camera.dist],view=look(eye,[player.x,1,player.z]),proj=persp(1.05,canvas.width/canvas.height,.1,180),mvp=mul(proj,mul(view,m));gl.uniformMatrix4fv(uMVP,false,mvp);gl.uniformMatrix4fv(uModel,false,m);const cv=new Float32Array(24),c=colorHex(col);for(let i=0;i<24;i++)cv.set(c,i*3);gl.bindBuffer(gl.ARRAY_BUFFER,cBuf);gl.bufferData(gl.ARRAY_BUFFER,cv,gl.DYNAMIC_DRAW);gl.enableVertexAttribArray(aColorLoc);gl.vertexAttribPointer(aColorLoc,3,gl.FLOAT,false,0,0);gl.drawElements(gl.TRIANGLES,36,gl.UNSIGNED_SHORT,0)}
 function setupLobby(){
@@ -57,15 +57,41 @@ function nearestLobbyService(){let best=null,bd=999;for(const o of lobbyServices
 function updateLobbyPrompt(){if(sceneMode!=='lobby')return;const o=nearestLobbyService(),el=$('#lobbyPrompt');if(!el)return;if(o){el.innerHTML=`<b>E</b> ${o.name}`;el.classList.remove('hidden')}else el.classList.add('hidden')}
 function interactLobby(){const o=nearestLobbyService();if(o)o.action()}
 function renderLobby(){
-  canvas=$('#gameCanvas'); if(!canvas||!gl)return;
-  gl.clearColor(.06,.09,.14,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.useProgram(program);gl.uniform3f(gl.getUniformLocation(program,'uLight'),-.4,1,.3);
-  for(let x=-30;x<=30;x+=3)for(let z=-30;z<=30;z+=3)drawCube(x,-.7,z,1.35,(Math.abs(x+z)%6===0)?'#5b4939':'#6a5744');
-  // praça central e caminhos
-  drawCube(0,.05,0,12,'#79634b'); drawCube(0,.16,0,7,'#887157');
-  lobbyServices.forEach((o,i)=>{drawCube(o.x,.9,o.z,1.35,o.col);drawCube(o.x,2.15,o.z,.72,o.col);drawCube(o.x,3.0,o.z,.32,'#e4d4ad')});
-  objects.filter(o=>o.type>=20).forEach(o=>{drawCube(o.x,.9,o.z,.75,o.col);drawCube(o.x,2.1,o.z,1.35,o.col)});
-  // personagem blocky
-  drawCube(player.x,.85,player.z,1.15,'#4fc8e8'); drawCube(player.x,2.0,player.z,.75,'#d9a47d');
+  if(!canvas||!gl)return;
+  gl.viewport(0,0,canvas.width,canvas.height);
+  gl.clearColor(.025,.045,.075,1);
+  gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+  gl.useProgram(program);
+  gl.uniform3f(gl.getUniformLocation(program,'uLight'),-.35,1,.55);
+  // chão amplo
+  for(let x=-30;x<=30;x+=3)for(let z=-30;z<=30;z+=3){
+    const c=((Math.abs(x/3)+Math.abs(z/3))%2===0)?'#725c43':'#604d39';
+    drawCube(x,-.75,z,2.9,c);
+  }
+  // praça central
+  drawCube(0,-.05,0,12,'#8a7254');
+  drawCube(0,.10,0,8,'#9b805f');
+  // portal/cristal central
+  drawCube(0,1.7,-1,3.0,'#334b78');
+  drawCube(0,3.7,-1,2.0,'#57d7ff');
+  drawCube(0,5.0,-1,1.0,'#b7f4ff');
+  // prédios/serviços
+  lobbyServices.forEach(o=>{
+    drawCube(o.x,.9,o.z,2.1,'#263449');
+    drawCube(o.x,2.35,o.z,1.55,o.col);
+    drawCube(o.x,3.55,o.z,.72,'#e8d5ad');
+  });
+  // árvores e decoração
+  objects.filter(o=>o.type>=20).forEach(o=>{
+    drawCube(o.x,.8,o.z,1.1,'#3b5b42');
+    drawCube(o.x,2.5,o.z,1.8,'#31583b');
+  });
+  // postes de luz
+  for(let i=0;i<8;i++){const a=i*Math.PI/4,x=Math.cos(a)*14,z=Math.sin(a)*14;drawCube(x,1,z,.32,'#a8b4c2');drawCube(x,3,z,.6,'#ffe8a6')}
+  // personagem
+  drawCube(player.x,.9,player.z,1.35,'#4fc8e8',camera.yaw);
+  drawCube(player.x,2.15,player.z,.9,'#d9a47d',camera.yaw);
+  drawCube(player.x,2.85,player.z,.42,'#273c67',camera.yaw);
   updateLobbyPrompt();
 }
 function setupWorld(){enemies=[];objects=[];particles=[];boss=null;const seed=state.region*1000+state.phase+77,reg=REGIONS[state.region];for(let i=0;i<90;i++){const a=rng(seed+i)*Math.PI*2,r=14+rng(seed+i+80)*55;objects.push({x:Math.cos(a)*r,z:Math.sin(a)*r,type:i%5})}const n=8+state.region+Math.floor((state.phase%25)/4);for(let i=0;i<n;i++){const a=rng(seed+i*4)*Math.PI*2,r=14+rng(seed+i*5)*42,rr=RACES[(state.region+i+state.phase)%RACES.length];enemies.push({x:Math.cos(a)*r,z:Math.sin(a)*r,hp:45+state.region*7,max:45+state.region*7,color:rr[1],speed:.7+rng(i+3)*.8})}if(state.phase%25===24)boss={x:0,z:-32,hp:100,max:100,color:'#ff4f88',name:'Guardião '+(state.region*100+Math.floor(state.phase/25)+1)};player={x:0,y:1.2,z:8,hp:100};updateHUD()}

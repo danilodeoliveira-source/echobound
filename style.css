@@ -34,3 +34,12 @@
 .lobby-world-screen .lobby-overlay{pointer-events:none;}
 .lobby-world-screen .lobby-services button{pointer-events:auto;}
 #game .hud,#game .boss-hud,#game .chapter-hud,#game #combatHint,#game #pauseBtn,#game .quality-panel,#game .compat-btn,#game .modal{pointer-events:auto;}
+
+/* REALFIX: canvas fora do app para nunca ser escondido por overlays/stacking contexts */
+html,body{overflow:hidden}
+#gameCanvas.global-world-canvas{position:fixed!important;left:0!important;top:0!important;right:0!important;bottom:0!important;width:100vw!important;height:100vh!important;display:block!important;z-index:0!important;background:#0b1220!important}
+#app{position:relative!important;z-index:1!important}
+#topbar{z-index:20!important}
+.screen{position:relative!important;z-index:2!important;background:transparent!important}
+.lobby-world-screen{background:transparent!important}
+.lobby-world-screen .lobby-title,.lobby-world-screen .lobby-help,.lobby-world-screen .lobby-prompt,.lobby-world-screen .lobby-services{z-index:5!important}
