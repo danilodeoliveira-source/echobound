@@ -62,3 +62,9 @@ html,body{overflow:hidden}
 .l3d-tree{font-size:62px;text-shadow:0 20px 8px #0008}.t1{left:5%;top:20%}.t2{left:40%;top:12%}.t3{right:39%;top:13%}.t4{right:4%;top:20%}
 @keyframes echoPulse{50%{transform:scale(1.04);filter:brightness(1.2)}}
 .lobby-world-screen>.lobby-overlay{z-index:5}.lobby-world-screen .lobby-title,.lobby-world-screen .lobby-help,.lobby-world-screen .lobby-prompt,.lobby-world-screen .lobby-services{z-index:6}
+
+/* V5000 lobby cleanup: remove decorative roof slabs and trees for a cleaner playable arena. */
+.l3d-building:after{display:none!important}
+.l3d-tree{display:none!important}
+
+.shop-notice{position:fixed;z-index:70;left:50%;top:92px;transform:translateX(-50%);padding:11px 18px;border:1px solid #4c7692;border-radius:12px;background:#07121fe8;color:#e8f7ff;box-shadow:0 12px 40px #0007;backdrop-filter:blur(10px);font-weight:700}.equip-slot{display:flex;flex-direction:column;gap:6px;border-color:#304b61;background:linear-gradient(135deg,#101d2c,#0b131f)}.equip-slot small{color:#6fdcff;letter-spacing:1px}.equip-slot b{font-size:17px}.equip-slot span{color:#8ea5ba;font-size:12px}.item-card button:disabled{opacity:.5;cursor:not-allowed}

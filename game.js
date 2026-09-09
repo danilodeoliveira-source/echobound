@@ -7,7 +7,42 @@ const REGIONS=[
  ['Floresta de Lúmen','#183d2b','#4fd18a'],['Deserto de Aurum','#5e421d','#e6bf5c'],['Picos de Vhar','#294b60','#a9e8ff'],['Ruínas de Noctis','#241b43','#b796ff'],['Costa de Maréa','#123e55','#52d9ff'],['Vulcão Kharon','#4a1d15','#ff765e'],['Pântano de Myra','#173b27','#9be86e'],['Céu de Aether','#303b63','#cbd8ff'],['Vale dos Gigantes','#4c3824','#e1b87b'],['Biblioteca Abissal','#2c1640','#e7a7ff'],['Jardim Celestial','#5a2c4b','#ffc3df'],['Coração do Eclipse','#27132f','#ff709a'],['Cavernas de Obsidiana','#151a24','#9aa8ff'],['Ilhas de Tempestade','#173d4c','#62d9ff'],['Cidade Mecânica','#252a31','#ffb45c'],['Planícies de Âmbar','#51401d','#ffd36b'],['Floresta Sombria','#201b28','#b27cff'],['Mar de Cristal','#17334a','#8ff0ff'],['Trono dos Titãs','#3b2a24','#ffb37a'],['Núcleo do Eco','#20152e','#ff72d2']
 ];
 const RACES=[['Zumbis','#7b9a75'],['Esqueletos','#c8cbd1'],['Bandidos','#a26a45'],['Orcs','#6ca344'],['Magos','#8b69e8'],['Feras','#9c7149'],['Espíritos','#8adbd7'],['Constructos','#7f92a2'],['Aranhas','#72558f'],['Draconianos','#b65b46']];
-const state=Object.assign({region:0,phase:0,xp:0,coins:250,shards:20,level:1,name:'Aventureiro',quality:'ultra'},(()=>{try{return JSON.parse(localStorage.getItem('echobound_v5000')||'{}')}catch{return {}}})());
+const state=Object.assign({region:0,phase:0,xp:0,coins:250,shards:20,level:1,name:'Aventureiro',quality:'ultra',inventory:[],equipped:{}},(()=>{try{return JSON.parse(localStorage.getItem('echobound_v5000')||'{}')}catch{return {}}})());
+if(!Array.isArray(state.inventory)) state.inventory=[];
+if(!state.equipped || typeof state.equipped!=='object') state.equipped={};
+const SHOP_ITEMS={
+  'Espada do Eco':{id:'sword_echo',slot:'arma',icon:'⚔',rarity:'Rara',price:50,power:12,desc:'Lâmina equilibrada que canaliza o Eco.'},
+  'Arco Prismático':{id:'bow_prism',slot:'arma',icon:'🏹',rarity:'Épica',price:125,power:24,desc:'Dispara flechas de energia prismática.'},
+  'Lâmina Solar':{id:'blade_solar',slot:'arma',icon:'☀️',rarity:'Lendária',price:200,power:40,desc:'Uma lâmina que brilha com energia solar.'},
+  'Armadura Lúmen':{id:'armor_lumen',slot:'armadura',icon:'🛡',rarity:'Rara',price:50,power:15,desc:'Protege contra golpes e aumenta a vitalidade.'},
+  'Escudo Guardião':{id:'shield_guard',slot:'armadura',icon:'🛡️',rarity:'Épica',price:125,power:30,desc:'Escudo reforçado para enfrentar chefes.'},
+  'Peitoral de Vhar':{id:'chest_vhar',slot:'armadura',icon:'🧱',rarity:'Lendária',price:200,power:45,desc:'Armadura forjada nos Picos de Vhar.'},
+  'Poção de Vida':{id:'potion_life',slot:'consumível',icon:'🧪',rarity:'Rara',price:50,power:25,desc:'Recupera vida durante a aventura.'},
+  'Elixir do Eco':{id:'elixir_echo',slot:'consumível',icon:'🔮',rarity:'Épica',price:125,power:50,desc:'Aumenta temporariamente a força do Eco.'},
+  'Frasco de Velocidade':{id:'speed_vial',slot:'consumível',icon:'⚗️',rarity:'Lendária',price:200,power:35,desc:'Aumenta a velocidade de movimento.'},
+  'Amuleto Prismático':{id:'amulet_prism',slot:'relíquia',icon:'💎',rarity:'Rara',price:50,power:10,desc:'Amplifica a energia coletada.'},
+  'Relíquia do Eclipse':{id:'relic_eclipse',slot:'relíquia',icon:'🌑',rarity:'Épica',price:125,power:28,desc:'Relíquia ancestral do Eclipse.'},
+  'Fragmento Antigo':{id:'fragment_ancient',slot:'relíquia',icon:'✦',rarity:'Lendária',price:200,power:45,desc:'Fragmento raro carregado de memórias.'}
+};
+const ITEM_BY_ID=Object.fromEntries(Object.values(SHOP_ITEMS).map(x=>[x.id,x]));
+function save(){try{localStorage.setItem('echobound_v5000',JSON.stringify(state));}catch{} updateHUD();}
+function ownedCount(id){return state.inventory.filter(x=>x===id).length}
+function isEquipped(id){return Object.values(state.equipped).includes(id)}
+function buyItem(name){
+  const item=SHOP_ITEMS[name]; if(!item) return;
+  if(state.coins<item.price){notifyShop('Echo Coins insuficientes.');return;}
+  state.coins-=item.price; state.inventory.push(item.id);
+  save(); buildShop(document.querySelector('#shopTitle')?.textContent||'Arsenal'); notifyShop(`${item.icon} ${name} comprado!`);
+}
+function equipItem(id){
+  const item=ITEM_BY_ID[id]; if(!item || !ownedCount(id)) return;
+  if(item.slot==='consumível'){notifyShop('Consumíveis não precisam ser equipados.');return;}
+  state.equipped[item.slot]=id; save(); buildInventory(); notifyShop(`${item.icon} ${itemName(id)} equipado!`);
+}
+function itemName(id){return ITEM_BY_ID[id]?.name||Object.keys(SHOP_ITEMS).find(k=>SHOP_ITEMS[k].id===id)||'Item'}
+Object.entries(SHOP_ITEMS).forEach(([name,item])=>item.name=name);
+let shopNoticeTimer=0;
+function notifyShop(msg){const el=$('#shopNotice');if(!el)return;el.textContent=msg;el.classList.remove('hidden');clearTimeout(shopNoticeTimer);shopNoticeTimer=setTimeout(()=>el.classList.add('hidden'),2200)}
 let gl,program,canvas,raf,last=0,keys={},time=0,attackCD=0,echoCD=0,gameRunning=false;
 let authMode='login', currentRoom=null, socket=null;
 const ONLINE_WS_URL=(window.ECHOBOUND_CONFIG&&window.ECHOBOUND_CONFIG.wsUrl)||'';
@@ -97,7 +132,7 @@ function renderLobby(){
 }
 function setupWorld(){enemies=[];objects=[];particles=[];boss=null;const seed=state.region*1000+state.phase+77,reg=REGIONS[state.region];for(let i=0;i<90;i++){const a=rng(seed+i)*Math.PI*2,r=14+rng(seed+i+80)*55;objects.push({x:Math.cos(a)*r,z:Math.sin(a)*r,type:i%5})}const n=8+state.region+Math.floor((state.phase%25)/4);for(let i=0;i<n;i++){const a=rng(seed+i*4)*Math.PI*2,r=14+rng(seed+i*5)*42,rr=RACES[(state.region+i+state.phase)%RACES.length];enemies.push({x:Math.cos(a)*r,z:Math.sin(a)*r,hp:45+state.region*7,max:45+state.region*7,color:rr[1],speed:.7+rng(i+3)*.8})}if(state.phase%25===24)boss={x:0,z:-32,hp:100,max:100,color:'#ff4f88',name:'Guardião '+(state.region*100+Math.floor(state.phase/25)+1)};player={x:0,y:1.2,z:8,hp:100};updateHUD()}
 function burst(x,y,z,col){for(let i=0;i<10;i++){const a=Math.random()*Math.PI*2;particles.push({x,y,z,vx:Math.cos(a)*3,vy:1+Math.random()*4,vz:Math.sin(a)*3,life:.55,col})}}
-function update(dt){time+=dt;attackCD=Math.max(0,attackCD-dt);echoCD=Math.max(0,echoCD-dt);let dx=(keys.d||keys.ArrowRight?1:0)-(keys.a||keys.ArrowLeft?1:0),dz=(keys.s||keys.ArrowDown?1:0)-(keys.w||keys.ArrowUp?1:0);if(dx||dz){const l=Math.hypot(dx,dz);player.x+=dx/l*7*dt;player.z+=dz/l*7*dt}if(keys.q)camera.yaw-=dt;if(keys.e)camera.yaw+=dt;enemies.forEach(e=>{const x=player.x-e.x,z=player.z-e.z,d=Math.hypot(x,z)||1;if(d>2.3){e.x+=x/d*e.speed*dt;e.z+=z/d*e.speed*dt}else player.hp=clamp(player.hp-8*dt,0,100)});if(boss){const x=player.x-boss.x,z=player.z-boss.z,d=Math.hypot(x,z)||1;if(d>4){boss.x+=x/d*1.5*dt;boss.z+=z/d*1.5*dt}else player.hp=clamp(player.hp-12*dt,0,100)}particles.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;p.vy-=6*dt;p.life-=dt});particles=particles.filter(p=>p.life>0);if(player.hp<=0){player.hp=100;player.x=0;player.z=8}updateHUD()}
+function update(dt){time+=dt;attackCD=Math.max(0,attackCD-dt);echoCD=Math.max(0,echoCD-dt);let dx=(keys.d||keys.ArrowRight?1:0)-(keys.a||keys.ArrowLeft?1:0),dz=(keys.s||keys.ArrowDown?1:0)-(keys.w||keys.ArrowUp?1:0);if(dx||dz){const l=Math.hypot(dx,dz);player.x+=dx/l*12*dt;player.z+=dz/l*12*dt}if(keys.q)camera.yaw-=dt;if(keys.e)camera.yaw+=dt;enemies.forEach(e=>{const x=player.x-e.x,z=player.z-e.z,d=Math.hypot(x,z)||1;if(d>2.3){e.x+=x/d*e.speed*dt;e.z+=z/d*e.speed*dt}else player.hp=clamp(player.hp-8*dt,0,100)});if(boss){const x=player.x-boss.x,z=player.z-boss.z,d=Math.hypot(x,z)||1;if(d>4){boss.x+=x/d*1.5*dt;boss.z+=z/d*1.5*dt}else player.hp=clamp(player.hp-12*dt,0,100)}particles.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.z+=p.vz*dt;p.vy-=6*dt;p.life-=dt});particles=particles.filter(p=>p.life>0);if(player.hp<=0){player.hp=100;player.x=0;player.z=8}updateHUD()}
 function attack(){if(attackCD>0)return;attackCD=.28;enemies=enemies.filter(e=>{if(Math.hypot(e.x-player.x,e.z-player.z)<4){e.hp-=35;burst(e.x,1,e.z,'#6fe8ff');if(e.hp<=0){state.coins+=10;state.xp+=20;return false}}return true});if(boss&&Math.hypot(boss.x-player.x,boss.z-player.z)<5){boss.hp-=8;burst(boss.x,2,boss.z,'#ff70b0');if(boss.hp<=0){boss=null;state.coins+=500;state.xp+=500;save()}}}
 function echo(){if(echoCD>0)return;echoCD=3;enemies=enemies.filter(e=>{if(Math.hypot(e.x-player.x,e.z-player.z)<8){e.hp-=75;burst(e.x,1,e.z,'#aa82ff')}return e.hp>0});if(boss&&Math.hypot(boss.x-player.x,boss.z-player.z)<9){boss.hp-=22;burst(boss.x,2,boss.z,'#aa82ff')}}
 function render(){if(sceneMode==='lobby'){renderLobby();return}const reg=REGIONS[state.region];gl.clearColor(...colorHex(reg[1]),1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.useProgram(program);gl.uniform3f(gl.getUniformLocation(program,'uLight'),-.4,1,.3);for(let x=-60;x<=60;x+=5)for(let z=-60;z<=60;z+=5)drawCube(x,-.65,z,2,reg[1]);objects.forEach(o=>{if(o.type===0){drawCube(o.x,.9,o.z,.65,reg[2]);drawCube(o.x,2.8,o.z,2.2,reg[1])}else if(o.type===1)drawCube(o.x,.8,o.z,1.1,'#6b7788');else if(o.type===2)drawCube(o.x,.5,o.z,1.4,'#8d5b3f');else if(o.type===3)drawCube(o.x,1,o.z,.8,reg[2]);else drawCube(o.x,.4,o.z,1.6,'#33404e')});enemies.forEach(e=>{drawCube(e.x,1,e.z,1.25,e.color,Math.atan2(player.x-e.x,player.z-e.z));drawCube(e.x,2.15,e.z,.8,e.color)});if(boss){drawCube(boss.x,2,boss.z,3,boss.color);drawCube(boss.x,5,boss.z,1.8,'#ffd166');$('#bossBar').style.width=Math.max(0,boss.hp)+'%';$('#bossHud').classList.remove('hidden');$('#bossName').textContent=boss.name}else $('#bossHud').classList.add('hidden');drawCube(player.x,1.2,player.z,1.15,'#4f9dff',camera.yaw);drawCube(player.x,2.7,player.z,.78,'#d9a47d',camera.yaw);particles.forEach(p=>drawCube(p.x,p.y,p.z,.12,p.col))}
@@ -121,7 +156,7 @@ function startGame(){
 }
 function loop(now){if(!gameRunning)return;const dt=Math.min(.033,(now-last)/1000||.016);last=now;if($('#pauseMenu').classList.contains('hidden')){update(dt);try{render()}catch(err){console.error('EchoBound render error',err);gl=null;program=null;}}raf=requestAnimationFrame(loop)}
 function save(){try{localStorage.setItem('echobound_v5000',JSON.stringify(state))}catch{}}
-function updateHUD(){const phase=state.phase+1,bossPhase=state.phase%25===24;$('#hudName').textContent=state.name;$('#hudLevel').textContent=state.level;$('#hudCoins').textContent=state.coins;$('#hudShards').textContent=state.shards;$('#regionHud').textContent=REGIONS[state.region][0];$('#phaseHud').textContent=`FASE ${phase}/25`;$('#objective').textContent=bossPhase?'Derrote o Guardião':'Explore, lute e encontre o próximo eco';$('#hpBar').style.width=player.hp+'%';$('#xpBar').style.width=(state.xp%100)+'%';$('#chapterLabel').textContent=bossPhase?'CAPÍTULO BOSS':'CAPÍTULO '+((state.phase%6)+1)+'/6';$('#timerLabel').textContent=bossPhase?'90:00':'60:00'}
+function updateHUD(){[$('#hudCoins'),$('#coins')].filter(Boolean).forEach(el=>el.textContent=state.coins);const shardEl=$('#hudShards');if(shardEl)shardEl.textContent=state.shards;const phase=state.phase+1,bossPhase=state.phase%25===24;$('#hudName').textContent=state.name;$('#hudLevel').textContent=state.level;$('#hudCoins').textContent=state.coins;$('#hudShards').textContent=state.shards;$('#regionHud').textContent=REGIONS[state.region][0];$('#phaseHud').textContent=`FASE ${phase}/25`;$('#objective').textContent=bossPhase?'Derrote o Guardião':'Explore, lute e encontre o próximo eco';$('#hpBar').style.width=player.hp+'%';$('#xpBar').style.width=(state.xp%100)+'%';$('#chapterLabel').textContent=bossPhase?'CAPÍTULO BOSS':'CAPÍTULO '+((state.phase%6)+1)+'/6';$('#timerLabel').textContent=bossPhase?'90:00':'60:00'}
 function show(id){
   $$('.screen').forEach(x=>x.classList.remove('active'));
   const el=$('#'+id); if(el)el.classList.add('active');
@@ -131,9 +166,24 @@ function show(id){
 function buildMap(){const g=$('#regionGrid');if(!g)return;g.innerHTML=REGIONS.map((r,i)=>`<button class="panel" data-region="${i}"><b>${i+1}. ${r[0]}</b><small>25 fases • 100 chefes</small></button>`).join('');$$('[data-region]').forEach(b=>b.onclick=()=>{state.region=+b.dataset.region;buildPhases();show('region');save()})}
 function buildPhases(){const g=$('#phaseGrid');if(!g)return;$('#regionTitle').textContent=REGIONS[state.region][0];$('#regionEyebrow').textContent=`REGIÃO ${state.region+1}/20`;$('#regionDesc').textContent='25 fases, incluindo uma batalha de Guardião a cada ciclo.';$('#regionStats').innerHTML=`<b>25 fases</b><b>100 chefes</b><b>10 raças</b><b>60/90 min</b>`;g.innerHTML=Array.from({length:25},(_,i)=>{const boss=i===24;return `<button class="panel" data-phase="${i}"><b>${boss?'👑':'⚔️'} Fase ${i+1}</b><small>${boss?'Boss • 90 minutos':'Aventura • 60 minutos'}</small></button>`}).join('');$$('[data-phase]').forEach(b=>b.onclick=()=>{state.phase=+b.dataset.phase;show('game');save()})}
 function buildCodex(){const g=$('#bossGrid');if(!g)return;g.innerHTML=Array.from({length:20},(_,r)=>`<article class="panel"><b>${REGIONS[r][0]}</b><p>100 chefes • elementos • arenas • modificadores</p></article>`).join('')}
-function buildInventory(){const g=$('#inventoryGrid');if(!g)return;g.innerHTML=['Espada do Eco','Armadura Lúmen','Amuleto Prismático','Poção de Vida','Fragmento Antigo','Relíquia do Eclipse'].map((x,i)=>`<article class="panel"><b>${x}</b><p>Raridade ${['Comum','Rara','Épica','Lendária'][i%4]} • +${i*5+5}</p></article>`).join('')}
+function buildInventory(){
+  const g=$('#inventoryGrid'); if(!g)return;
+  const owned=[...new Set(state.inventory)].map(id=>ITEM_BY_ID[id]).filter(Boolean);
+  const equipped=Object.values(state.equipped);
+  const slots=[['arma','Arma'],['armadura','Armadura'],['relíquia','Relíquia']];
+  const slotCards=slots.map(([slot,label])=>{const id=state.equipped[slot],it=ITEM_BY_ID[id];return `<article class="panel equip-slot"><small>${label}</small><b>${it?it.icon+' '+it.name:'— Vazio —'}</b><span>${it?it.rarity+' • Poder +'+it.power:'Nenhum item equipado'}</span></article>`}).join('');
+  g.innerHTML=slotCards + (owned.length?owned.map(it=>`<article class="panel item-card"><div class="icon">${it.icon}</div><h3>${it.name}</h3><p>${it.desc}</p><small>${it.rarity} • Poder +${it.power} • ${ownedCount(it.id)}x</small><button ${it.slot==='consumível'?'disabled':''} data-equip="${it.id}">${isEquipped(it.id)?'✅ Equipado':'⚡ Equipar'}</button></article>`).join(''):`<article class="panel"><h3>Inventário vazio</h3><p>Compre itens nos comerciantes do Santuário.</p></article>`);
+  $$('[data-equip]').forEach(b=>b.onclick=()=>equipItem(b.dataset.equip));
+}
+
 function buildStats(){const g=$('#statsGrid');if(!g)return;const defeated=Math.max(0,Math.floor(state.xp/20));g.innerHTML=[['Nível',state.level],['XP',state.xp],['Echo Coins',state.coins],['Fragmentos',state.shards],['Região atual',`${state.region+1}/20`],['Fase atual',`${state.phase+1}/25`],['Inimigos derrotados',defeated],['Chefes disponíveis','2.000']].map(([a,b])=>`<article class="panel stat-card"><small>${a}</small><b>${b}</b></article>`).join('')}
-function buildShop(shop){const g=$('#shopGrid');if(!g)return;const sets={Arsenal:['Espada do Eco','Arco Prismático','Lâmina Solar'],Ferreiro:['Armadura Lúmen','Escudo Guardião','Peitoral de Vhar'],Alquimista:['Poção de Vida','Elixir do Eco','Frasco de Velocidade'],Relíquias:['Amuleto Prismático','Relíquia do Eclipse','Fragmento Antigo']};g.innerHTML=(sets[shop]||sets.Arsenal).map((x,i)=>`<article class="panel item-card"><div class="icon">${['⚔','🛡','✦'][i]}</div><h3>${x}</h3><p>Equipamento do ${shop}. Raridade ${['Rara','Épica','Lendária'][i]}.</p><button>Comprar • ${50+i*75} ✦</button></article>`).join('')}
+function buildShop(shop){
+  const g=$('#shopGrid'); if(!g)return;
+  const sets={Arsenal:['Espada do Eco','Arco Prismático','Lâmina Solar'],Ferreiro:['Armadura Lúmen','Escudo Guardião','Peitoral de Vhar'],Alquimista:['Poção de Vida','Elixir do Eco','Frasco de Velocidade'],Relíquias:['Amuleto Prismático','Relíquia do Eclipse','Fragmento Antigo']};
+  g.innerHTML=(sets[shop]||sets.Arsenal).map(name=>{const it=SHOP_ITEMS[name];const owned=ownedCount(it.id);return `<article class="panel item-card"><div class="icon">${it.icon}</div><h3>${it.name}</h3><p>${it.desc}</p><small>${it.rarity} • Poder +${it.power}${owned?' • '+owned+'x no inventário':''}</small><button data-buy="${it.name}">💰 Comprar • ${it.price} ✦</button></article>`}).join('');
+  $$('[data-buy]').forEach(b=>b.onclick=()=>buyItem(b.dataset.buy));
+}
+
 function bindUI(){
   $$('[data-action]').forEach(b=>b.onclick=()=>{
     const a=b.dataset.action;
