@@ -1,0 +1,62 @@
+'use strict';
+const http=require('http');
+const fs=require('fs');
+const path=require('path');
+const crypto=require('crypto');
+const PORT=Number(process.env.PORT||8787);
+const SECRET=process.env.ECHO_SECRET||'change-this-secret-in-production';
+const DATA_DIR=path.join(__dirname,'data'); const DB_FILE=path.join(DATA_DIR,'db.json');
+fs.mkdirSync(DATA_DIR,{recursive:true});
+const DEFAULT_STATE={region:0,phase:0,xp:0,coins:250,shards:20,essence:0,level:1,name:'Aventureiro',quality:'ultra8k',difficulty:'Normal',completedPhases:0,totalBossesDefeated:0,antiTamperAlerts:0,inventory:[],equipped:{},kills:0,bosses:0,missionsClaimed:[],achievements:[],totalCoinsEarned:250,skills:[],style:'Caçador',commerce:{buys:0,sells:0,spent:0,earned:0,history:[]}};
+const ITEMS={
+ sword_echo:{name:'Espada do Eco',slot:'arma',price:50,power:12}, bow_prism:{name:'Arco Prismático',slot:'arma',price:125,power:24}, blade_solar:{name:'Lâmina Solar',slot:'arma',price:200,power:40},
+ armor_lumen:{name:'Armadura Lúmen',slot:'armadura',price:50,power:15}, shield_guard:{name:'Escudo Guardião',slot:'armadura',price:125,power:30}, chest_vhar:{name:'Peitoral de Vhar',slot:'armadura',price:200,power:45},
+ potion_life:{name:'Poção de Vida',slot:'consumível',price:50,power:25}, elixir_echo:{name:'Elixir do Eco',slot:'consumível',price:125,power:50}, speed_vial:{name:'Frasco de Velocidade',slot:'consumível',price:200,power:35},
+ amulet_prism:{name:'Amuleto Prismático',slot:'relíquia',price:50,power:10}, relic_eclipse:{name:'Relíquia do Eclipse',slot:'relíquia',price:125,power:28}, fragment_ancient:{name:'Fragmento Antigo',slot:'relíquia',price:200,power:45}
+};
+const db=loadDb(); const rate=new Map();
+function loadDb(){try{return JSON.parse(fs.readFileSync(DB_FILE,'utf8'))}catch{return {users:{}}}}
+function saveDb(){fs.writeFileSync(DB_FILE,JSON.stringify(db,null,2));}
+function clone(x){return JSON.parse(JSON.stringify(x));}
+function normalizeUser(u){return String(u||'').trim().toLowerCase().replace(/[^a-z0-9_@.\-]/gi,'').slice(0,64)}
+function hashPassword(password,salt){return crypto.scryptSync(password,salt,64).toString('hex')}
+function makePassword(password){const salt=crypto.randomBytes(16).toString('hex');return salt+':'+hashPassword(password,salt)}
+function verifyPassword(password,stored){const [salt,hash]=String(stored).split(':');if(!salt||!hash)return false;const got=hashPassword(password,salt);return crypto.timingSafeEqual(Buffer.from(got,'hex'),Buffer.from(hash,'hex'))}
+function signToken(payload){const body=Buffer.from(JSON.stringify(payload)).toString('base64url');const sig=crypto.createHmac('sha256',SECRET).update(body).digest('base64url');return body+'.'+sig}
+function verifyToken(token){try{const [body,sig]=String(token).split('.');if(!body||!sig)return null;const expected=crypto.createHmac('sha256',SECRET).update(body).digest('base64url');if(!crypto.timingSafeEqual(Buffer.from(sig),Buffer.from(expected)))return null;const p=JSON.parse(Buffer.from(body,'base64url').toString());if(p.exp<Date.now())return null;return p}catch{return null}}
+function getAuth(req){const h=req.headers.authorization||'';return h.startsWith('Bearer ')?verifyToken(h.slice(7)):null}
+function getUser(req){const a=getAuth(req);return a?db.users[a.sub]:null}
+function safeState(s){const out=clone(DEFAULT_STATE);Object.assign(out,s||{});out.coins=Math.max(0,Math.min(1e9,Math.floor(Number(out.coins)||0)));out.shards=Math.max(0,Math.min(1e7,Math.floor(Number(out.shards)||0)));out.essence=Math.max(0,Math.min(1e7,Math.floor(Number(out.essence)||0)));out.xp=Math.max(0,Math.min(1e9,Math.floor(Number(out.xp)||0)));out.level=Math.max(1,Math.min(100000,Math.floor(Number(out.level)||1)));out.region=Math.max(0,Math.min(19,Math.floor(Number(out.region)||0)));out.phase=Math.max(0,Math.min(24,Math.floor(Number(out.phase)||0)));out.inventory=Array.isArray(out.inventory)?out.inventory.filter(id=>ITEMS[id]).slice(0,500):[];out.equipped=out.equipped&&typeof out.equipped==='object'?out.equipped:{};for(const [slot,id] of Object.entries(out.equipped)){if(!ITEMS[id]||ITEMS[id].slot!==slot||!out.inventory.includes(id))delete out.equipped[slot]};out.skills=Array.isArray(out.skills)?out.skills.filter(x=>['dash_echo','combo_core','parry_wave','echo_surge'].includes(x)):[];out.commerce=out.commerce&&typeof out.commerce==='object'?out.commerce:{buys:0,sells:0,spent:0,earned:0,history:[]};out.commerce.history=Array.isArray(out.commerce.history)?out.commerce.history.slice(0,20):[];return out}
+function json(res,status,obj){const b=JSON.stringify(obj);res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'Content-Type, Authorization','Access-Control-Allow-Methods':'GET,POST,OPTIONS','Cache-Control':'no-store'});res.end(b)}
+function body(req){return new Promise((resolve,reject)=>{let d='';req.on('data',c=>{d+=c;if(d.length>1e6)req.destroy()});req.on('end',()=>{try{resolve(d?JSON.parse(d):{})}catch(e){reject(e)}});req.on('error',reject)})}
+function tooFast(key){const now=Date.now();const r=rate.get(key)||{t:now,n:0};if(now-r.t>1000){r.t=now;r.n=0}r.n++;rate.set(key,r);return r.n>30}
+function audit(user,action,extra={}){user.audit=user.audit||[];user.audit.unshift({t:Date.now(),action,...extra});user.audit=user.audit.slice(0,100)}
+function respondState(res,user){user.state=safeState(user.state);return json(res,200,{ok:true,state:user.state,serverTime:Date.now()})}
+function handleAction(user,action){const s=user.state=safeState(user.state);const id=action.itemId;
+ if(action.type==='buy'){const it=ITEMS[id];if(!it)throw new Error('item_invalid');const count=s.inventory.filter(x=>x===id).length;if(count>=99)throw new Error('item_limit');if(s.coins<it.price)throw new Error('insufficient_coins');s.coins-=it.price;s.inventory.push(id);s.commerce.buys++;s.commerce.spent+=it.price;s.commerce.history.unshift({type:'Compra',item:it.name,amount:-it.price,t:Date.now()});audit(user,'buy',{itemId:id,price:it.price});}
+ else if(action.type==='sell'){const it=ITEMS[id];const idx=s.inventory.indexOf(id);if(!it||idx<0)throw new Error('not_owned');const refund=Math.max(1,Math.floor(it.price*.6));s.inventory.splice(idx,1);for(const slot of Object.keys(s.equipped))if(s.equipped[slot]===id)delete s.equipped[slot];s.coins+=refund;s.commerce.sells++;s.commerce.earned+=refund;s.commerce.history.unshift({type:'Venda',item:it.name,amount:refund,t:Date.now()});audit(user,'sell',{itemId:id,refund});}
+ else if(action.type==='equip'){const it=ITEMS[id];if(!it||it.slot==='consumível'||!s.inventory.includes(id))throw new Error('equip_invalid');s.equipped[it.slot]=id;audit(user,'equip',{itemId:id,slot:it.slot});}
+ else if(action.type==='unequip'){const slot=String(action.slot||'');if(!['arma','armadura','relíquia'].includes(slot))throw new Error('slot_invalid');delete s.equipped[slot];audit(user,'unequip',{slot});}
+ else if(action.type==='use_consumable'){const it=ITEMS[id];const idx=s.inventory.indexOf(id);if(!it||it.slot!=='consumível'||idx<0)throw new Error('consumable_invalid');s.inventory.splice(idx,1);audit(user,'use_consumable',{itemId:id});}
+ else if(action.type==='enemy_reward'){const reward=Math.max(0,Math.min(100,Math.floor(Number(action.count)||1)));s.kills+=reward;s.coins+=10*reward;s.totalCoinsEarned+=10*reward;s.xp+=20*reward;s.essence+=reward;audit(user,'enemy_reward',{count:reward});}
+ else if(action.type==='boss_reward'){if(action.guard!=='ECHO_BOSS_V1')throw new Error('reward_guard');s.bosses++;s.totalBossesDefeated++;s.coins+=125;s.totalCoinsEarned+=125;s.xp+=80;s.essence+=10;audit(user,'boss_reward');}
+ else if(action.type==='phase_complete'){if(action.guard!=='ECHO_PHASE_V1')throw new Error('reward_guard');s.completedPhases++;s.coins+=100;s.totalCoinsEarned+=100;s.xp+=100;s.essence+=10;audit(user,'phase_complete');}
+ else if(action.type==='migrate'){if(user.migrated)throw new Error('migration_used');const incoming=safeState(action.state);user.state=incoming;user.migrated=true;audit(user,'migrate');user.updatedAt=Date.now();saveDb();return {ok:true,state:user.state};}
+ else if(action.type==='buy_skill'){const costs={dash_echo:20,combo_core:30,parry_wave:40,echo_surge:60};const skill=String(action.skillId||'');if(!Object.prototype.hasOwnProperty.call(costs,skill))throw new Error('skill_invalid');if(s.skills.includes(skill))throw new Error('skill_owned');const cost=costs[skill];if(s.essence<cost)throw new Error('insufficient_essence');s.essence-=cost;s.skills.push(skill);audit(user,'buy_skill',{skill});}
+ else if(action.type==='set_style'){const style=String(action.style||'');if(!['Caçador','Guardião','Arcanista'].includes(style))throw new Error('style_invalid');s.style=style;audit(user,'set_style',{style});}
+ else if(action.type==='set_difficulty'){const diff=String(action.difficulty||'');if(!['Fácil','Normal','Difícil','Pesadelo'].includes(diff))throw new Error('difficulty_invalid');s.difficulty=diff;audit(user,'set_difficulty',{diff});}
+ else throw new Error('unknown_action');
+ user.state=safeState(s); user.updatedAt=Date.now();saveDb();return {ok:true,state:user.state};}
+const server=http.createServer(async(req,res)=>{try{if(req.method==='OPTIONS'){res.writeHead(204,{'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'Content-Type, Authorization','Access-Control-Allow-Methods':'GET,POST,OPTIONS'});return res.end()}if(tooFast(req.socket.remoteAddress||'unknown'))return json(res,429,{ok:false,error:'rate_limited'});const url=new URL(req.url,'http://localhost');
+ if(req.method==='GET'&&url.pathname==='/health')return json(res,200,{ok:true,service:'EchoBound authoritative backend',version:'1.0.0',time:Date.now()});
+ if(req.method==='POST'&&url.pathname==='/api/auth/register'){const b=await body(req);const u=normalizeUser(b.user);const p=String(b.password||'');if(!/^[a-z0-9_@.\-]{3,64}$/.test(u)||p.length<8)return json(res,400,{ok:false,error:'invalid_credentials'});if(db.users[u])return json(res,409,{ok:false,error:'user_exists'});db.users[u]={user:u,password:makePassword(p),state:safeState({name:u}),migrated:false,audit:[],createdAt:Date.now(),updatedAt:Date.now()};saveDb();const token=signToken({sub:u,iat:Date.now(),exp:Date.now()+30*24*3600*1000});return json(res,201,{ok:true,token,state:db.users[u].state});}
+ if(req.method==='POST'&&url.pathname==='/api/auth/login'){const b=await body(req);const u=normalizeUser(b.user);const p=String(b.password||'');const user=db.users[u];if(!user||!verifyPassword(p,user.password))return json(res,401,{ok:false,error:'invalid_credentials'});audit(user,'login');saveDb();const token=signToken({sub:u,iat:Date.now(),exp:Date.now()+30*24*3600*1000});return json(res,200,{ok:true,token,state:safeState(user.state)});}
+ const user=getUser(req); if(!user)return json(res,401,{ok:false,error:'unauthorized'});
+ if(req.method==='GET'&&url.pathname==='/api/me')return json(res,200,{ok:true,user:user.user,state:safeState(user.state)});
+ if(req.method==='GET'&&url.pathname==='/api/state')return respondState(res,user);
+ if(req.method==='POST'&&url.pathname==='/api/state/migrate'){const b=await body(req);try{return json(res,200,handleAction(user,{type:'migrate',state:b.state}))}catch(e){return json(res,409,{ok:false,error:e.message})}}
+ if(req.method==='POST'&&url.pathname==='/api/action'){const b=await body(req);try{return json(res,200,handleAction(user,b))}catch(e){return json(res,409,{ok:false,error:e.message})}}
+ if(req.method==='GET'&&(url.pathname==='/'||!url.pathname.startsWith('/api/'))){const rel=url.pathname==='/'?'index.html':url.pathname.replace(/^\//,'');const file=path.normalize(path.join(__dirname,rel));if(!file.startsWith(__dirname)||!fs.existsSync(file)||!fs.statSync(file).isFile())return json(res,404,{ok:false,error:'not_found'});const ext=path.extname(file);const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.txt':'text/plain; charset=utf-8','.md':'text/plain; charset=utf-8'};res.writeHead(200,{'Content-Type':types[ext]||'application/octet-stream','Access-Control-Allow-Origin':'*','Cache-Control':'no-store'});return fs.createReadStream(file).pipe(res);}
+ return json(res,404,{ok:false,error:'not_found'});
+}catch(e){console.error(e);return json(res,500,{ok:false,error:'server_error'})}});
+server.listen(PORT,()=>console.log(`EchoBound authoritative backend listening on :${PORT}`));

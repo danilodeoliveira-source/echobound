@@ -1,0 +1,11 @@
+{
+  "version": "vMetaModel2027 FINAL",
+  "regions": 20,
+  "phases": 500,
+  "boss_encounters": 2000,
+  "enemies_races": 10,
+  "bosses_per_region": 100,
+  "phase_duration_normal_minutes": 60,
+  "phase_duration_boss_minutes": 90,
+  "render_target": "ULTRA 8K adaptive up to 7680x4320"
+}

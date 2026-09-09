@@ -8,37 +8,7 @@ const REGIONS=[
 ];
 const RACES=[['Zumbis','#7b9a75'],['Esqueletos','#c8cbd1'],['Bandidos','#a26a45'],['Orcs','#6ca344'],['Magos','#8b69e8'],['Feras','#9c7149'],['Espíritos','#8adbd7'],['Constructos','#7f92a2'],['Aranhas','#72558f'],['Draconianos','#b65b46']];
 const state=Object.assign({region:0,phase:0,xp:0,coins:250,shards:20,essence:0,level:1,name:'Aventureiro',quality:'ultra8k',difficulty:'Normal',completedPhases:0,totalBossesDefeated:0,antiTamperAlerts:0,saveSeq:0,lastActionAt:0,inventory:[],equipped:{},kills:0,bosses:0,missionsClaimed:[],achievements:[],totalCoinsEarned:250},(()=>{try{return JSON.parse(localStorage.getItem('echobound_vmeta2027')||localStorage.getItem('echobound_vultra9999')||localStorage.getItem('echobound_vultra7000')||localStorage.getItem('echobound_vultra6000')||'{}')}catch{return {}}})());
-if(state.__integrity && state.__integrity!==stateHash({...state,__integrity:undefined})){state.antiTamperAlerts=(state.antiTamperAlerts||0)+1}delete state.__integrity;
-const API_BASE=String(window.ECHOBOUND_CONFIG?.apiBase||'').replace(/\/$/,'');
-let AUTH_TOKEN=localStorage.getItem('echobound_auth_token')||'';
-let SERVER_ONLINE=false;
-async function apiRequest(path, options={}){
-  if(!API_BASE) throw new Error('backend_not_configured');
-  const headers=Object.assign({'Content-Type':'application/json'},options.headers||{});
-  if(AUTH_TOKEN) headers.Authorization='Bearer '+AUTH_TOKEN;
-  const res=await fetch(API_BASE+path,{...options,headers});
-  const data=await res.json().catch(()=>({}));
-  if(!res.ok) throw new Error(data.error||('http_'+res.status));
-  return data;
-}
-function applyServerState(serverState){
-  if(!serverState||typeof serverState!=='object')return;
-  Object.keys(serverState).forEach(k=>{state[k]=serverState[k]});
-  delete state.__integrity;
-  sanitizeState();
-  localStorage.setItem('echobound_vmeta2027',JSON.stringify({...state,__integrity:stateHash(state)}));
-  updateHUD(); buildInventory(); buildDeluxe(); updateLobbyDashboard();
-}
-function hasMeaningfulLocalProgress(){return !!(state.completedPhases||state.kills||state.bosses||state.inventory?.length||state.xp||state.coins!==250||state.essence||state.achievements?.length)}
-async function serverAction(action){
-  if(!API_BASE||!AUTH_TOKEN) throw new Error('backend_not_ready');
-  return apiRequest('/api/action',{method:'POST',body:JSON.stringify(action)});
-}
-async function syncServerState(){
-  if(!API_BASE||!AUTH_TOKEN)return false;
-  try{const r=await apiRequest('/api/state');applyServerState(r.state);SERVER_ONLINE=true;return true}catch(e){SERVER_ONLINE=false;return false}
-}
-if(!Array.isArray(state.inventory)) state.inventory=[];
+if(state.__integrity && state.__integrity!==stateHash({...state,__integrity:undefined})){state.antiTamperAlerts=(state.antiTamperAlerts||0)+1}delete state.__integrity;if(!Array.isArray(state.inventory)) state.inventory=[];
 if(!state.equipped || typeof state.equipped!=='object') state.equipped={};
 if(!Array.isArray(state.missionsClaimed)) state.missionsClaimed=[];
 if(!Array.isArray(state.achievements)) state.achievements=[];
@@ -69,9 +39,9 @@ const DELUXE_SKILLS=[
 ];
 const STYLE_DATA={'Caçador':{damage:35,speed:12,echo:75},'Guardião':{damage:30,speed:10,echo:95},'Arcanista':{damage:26,speed:11,echo:125}};const DIFFICULTY_DATA={'Fácil':{hp:.75,enemy:0.75,damage:.7},'Normal':{hp:1,enemy:1,damage:1},'Difícil':{hp:1.35,enemy:1.2,damage:1.25},'Pesadelo':{hp:1.8,enemy:1.45,damage:1.55}};state.difficulty=DIFFICULTY_DATA[state.difficulty]?state.difficulty:'Normal';
 function hasSkill(id){return state.skills.includes(id)}
-async function buySkill(id){const sk=DELUXE_SKILLS.find(x=>x.id===id);if(!sk||hasSkill(id))return;if(API_BASE&&AUTH_TOKEN){try{const r=await serverAction({type:'buy_skill',skillId:id});applyServerState(r.state);buildDeluxe();updateHUD();notifyShop('◈ Técnica desbloqueada no servidor: '+sk.name);return}catch(e){notifyShop(e.message==='insufficient_essence'?'Essência insuficiente.':'Desbloqueio recusado pelo servidor.');return}}if(state.essence<sk.cost){notifyShop('Essência insuficiente.');return}state.essence-=sk.cost;state.skills.push(id);save();buildDeluxe();updateHUD();notifyShop('◈ Técnica desbloqueada: '+sk.name)}
+function buySkill(id){const sk=DELUXE_SKILLS.find(x=>x.id===id);if(!sk||hasSkill(id))return;if(state.essence<sk.cost){notifyShop('Essência insuficiente.');return}state.essence-=sk.cost;state.skills.push(id);save();buildDeluxe();updateHUD();notifyShop('◈ Técnica desbloqueada: '+sk.name)}
 function activateResonance(){if(state.essence<25){notifyShop('Você precisa de 25 Essências.');return}state.essence-=25;resonanceTime=15;save();buildDeluxe();notifyShop('⚡ Ressonância ativa por 15s!')}
-async function cycleStyle(){const k=Object.keys(STYLE_DATA),i=k.indexOf(state.style),next=k[(i+1)%k.length];if(API_BASE&&AUTH_TOKEN){try{const r=await serverAction({type:'set_style',style:next});applyServerState(r.state);buildDeluxe();notifyShop('🔄 Estilo: '+state.style);return}catch(e){notifyShop('Estilo recusado pelo servidor.');return}}state.style=next;save();buildDeluxe();notifyShop('🔄 Estilo: '+state.style)}
+function cycleStyle(){const k=Object.keys(STYLE_DATA),i=k.indexOf(state.style);state.style=k[(i+1)%k.length];save();buildDeluxe();notifyShop('🔄 Estilo: '+state.style)}
 function buildDeluxe(){const g=$('#skillGrid');if(g)g.innerHTML=DELUXE_SKILLS.map(sk=>`<div class="skill-card ${hasSkill(sk.id)?'unlocked':''}"><b>${hasSkill(sk.id)?'✅':'🔒'} ${sk.name}</b><small>${sk.desc}</small><div style="margin-top:7px;color:#6fdcff">${hasSkill(sk.id)?'Desbloqueada':'Custo: '+sk.cost+' ◈'}</div><button data-skill="${sk.id}" ${hasSkill(sk.id)?'disabled':''}>${hasSkill(sk.id)?'Ativa':'Desbloquear'}</button></div>`).join('');$$('[data-skill]').forEach(b=>b.onclick=()=>buySkill(b.dataset.skill));if($('#combatStyle'))$('#combatStyle').innerHTML=`<b>${state.style}</b><p>Dano ${STYLE_DATA[state.style].damage} • Vel. ${STYLE_DATA[state.style].speed} • Eco ${STYLE_DATA[state.style].echo}</p>`;if($('#deluxeEssence'))$('#deluxeEssence').textContent=state.essence;const pct=resonanceTime>0?resonanceTime/15*100:0;if($('#resonanceBar'))$('#resonanceBar').style.width=pct+'%';if($('#resonanceTitle'))$('#resonanceTitle').textContent=resonanceTime>0?'Ressonância Ativa':'Ressonância Inativa';if($('#resonanceText'))$('#resonanceText').textContent=resonanceTime>0?'Ataques recebem +50% e o jogador ignora dano por uma curta janela.':'Ative usando 25 Essências.'}
 
 function missionProgress(m){if(m.type==='kills')return Math.min(m.target,state.kills);if(m.type==='coins')return Math.min(m.target,state.totalCoinsEarned);if(m.type==='bosses')return Math.min(m.target,state.bosses);return 0}
@@ -99,41 +69,49 @@ function commerceLog(type,item,amount){state.commerce.history.unshift({type,item
 function validItem(item){return item&&Number.isFinite(item.price)&&item.price>=0&&Number.isFinite(item.power)&&item.id&&ITEM_BY_ID[item.id]===item}
 let shopNoticeTimer=0;
 function notifyShop(msg){const el=$('#shopNotice');if(!el)return;el.textContent=msg;el.classList.remove('hidden');clearTimeout(shopNoticeTimer);shopNoticeTimer=setTimeout(()=>el.classList.add('hidden'),2600)}
-async function buyItem(name){
+function buyItem(name){
   const item=SHOP_ITEMS[name];
   if(!validItem(item)){notifyShop('Item inválido.');return false;}
-  if(API_BASE&&AUTH_TOKEN){
-    try{const r=await serverAction({type:'buy',itemId:item.id});applyServerState(r.state);buildShop($('#shopTitle')?.textContent||'Arsenal');notifyShop(`${item.icon} ${name} comprado no servidor por ${item.price} ✦.`);return true}
-    catch(e){notifyShop(e.message==='insufficient_coins'?'Echo Coins insuficientes.':'Compra recusada pelo servidor.');return false}
-  }
-  const count=ownedCount(item.id); if(count>=99){notifyShop('Limite de 99 unidades atingido.');return false}
-  if(state.coins<item.price){notifyShop('Echo Coins insuficientes.');return false}
-  state.coins-=item.price; state.inventory.push(item.id); state.commerce.buys++; state.commerce.spent+=item.price; commerceLog('Compra',item,-item.price);
-  save(); updateHUD(); buildShop($('#shopTitle')?.textContent||'Arsenal'); notifyShop(`${item.icon} ${name} comprado por ${item.price} ✦.`); return true;
+  const count=ownedCount(item.id);
+  if(count>=99){notifyShop('Limite de 99 unidades atingido.');return false;}
+  if(state.coins<item.price){notifyShop('Echo Coins insuficientes.');return false;}
+  const before=state.coins;
+  state.coins=before-item.price;
+  state.inventory.push(item.id);
+  state.commerce.buys++; state.commerce.spent+=item.price; commerceLog('Compra',item,-item.price);
+  save(); updateHUD(); buildShop($('#shopTitle')?.textContent||'Arsenal');
+  notifyShop(`${item.icon} ${name} comprado por ${item.price} ✦.`);
+  return true;
 }
-async function sellItem(id){
+function sellItem(id){
   const item=ITEM_BY_ID[id];
   if(!validItem(item)||!ownedCount(id)){notifyShop('Você não possui esse item.');return false;}
-  if(API_BASE&&AUTH_TOKEN){
-    try{const r=await serverAction({type:'sell',itemId:id});applyServerState(r.state);buildInventory();buildShop($('#shopTitle')?.textContent||'Arsenal');notifyShop(`${item.icon} ${item.name} vendido pelo servidor.`);return true}
-    catch(e){notifyShop('Venda recusada pelo servidor.');return false}
-  }
-  const idx=state.inventory.indexOf(id); if(idx<0)return false; const refund=Math.max(1,Math.floor(item.price*.6)); const wasEquipped=Object.entries(state.equipped).find(([,v])=>v===id); if(wasEquipped) delete state.equipped[wasEquipped[0]];
-  state.inventory.splice(idx,1); state.coins+=refund; state.commerce.sells++; state.commerce.earned+=refund; commerceLog('Venda',item,refund); save(); updateHUD(); buildInventory(); buildShop($('#shopTitle')?.textContent||'Arsenal'); notifyShop(`${item.icon} ${item.name} vendido por ${refund} ✦.`); return true;
+  const idx=state.inventory.indexOf(id);
+  if(idx<0)return false;
+  const refund=Math.max(1,Math.floor(item.price*0.6));
+  const wasEquipped=Object.entries(state.equipped).find(([,v])=>v===id);
+  if(wasEquipped) delete state.equipped[wasEquipped[0]];
+  state.inventory.splice(idx,1); state.coins+=refund; state.commerce.sells++; state.commerce.earned+=refund; commerceLog('Venda',item,refund);
+  save(); updateHUD(); buildInventory(); buildShop($('#shopTitle')?.textContent||'Arsenal');
+  notifyShop(`${item.icon} ${item.name} vendido por ${refund} ✦.`);
+  return true;
 }
-async function equipItem(id){
-  const item=ITEM_BY_ID[id]; if(!validItem(item)||!ownedCount(id))return false; if(item.slot==='consumível'){notifyShop('Consumíveis são usados no inventário.');return false;}
-  if(API_BASE&&AUTH_TOKEN){try{const r=await serverAction({type:'equip',itemId:id});applyServerState(r.state);buildInventory();updateHUD();notifyShop(`${item.icon} ${item.name} equipado pelo servidor!`);return true}catch(e){notifyShop('Equipamento recusado pelo servidor.');return false}}
+function equipItem(id){
+  const item=ITEM_BY_ID[id];
+  if(!validItem(item)||!ownedCount(id))return false;
+  if(item.slot==='consumível'){notifyShop('Consumíveis são usados no inventário.');return false;}
   state.equipped[item.slot]=id; save(); buildInventory(); updateHUD(); notifyShop(`${item.icon} ${item.name} equipado!`); return true;
 }
-async function unequipItem(slot){if(!state.equipped[slot])return;if(API_BASE&&AUTH_TOKEN){try{const r=await serverAction({type:'unequip',slot});applyServerState(r.state);buildInventory();notifyShop('Equipamento removido.');return true}catch(e){notifyShop('Ação recusada pelo servidor.');return false}}delete state.equipped[slot];save();buildInventory();notifyShop('Equipamento removido.');return true}
-async function useConsumable(id){
-  const item=ITEM_BY_ID[id]; if(!item||item.slot!=='consumível'||!ownedCount(id)){notifyShop('Consumível indisponível.');return false;}
+function unequipItem(slot){if(!state.equipped[slot])return;delete state.equipped[slot];save();buildInventory();notifyShop('Equipamento removido.')}
+function useConsumable(id){
+  const item=ITEM_BY_ID[id];
+  if(!item||item.slot!=='consumível'||!ownedCount(id)){notifyShop('Consumível indisponível.');return false;}
   if(sceneMode!=='game'){notifyShop('Entre em uma fase para usar consumíveis.');return false;}
-  if(API_BASE&&AUTH_TOKEN){try{const r=await serverAction({type:'use_consumable',itemId:id});applyServerState(r.state);}catch(e){notifyShop('Uso recusado pelo servidor.');return false}}
-  else {const idx=state.inventory.indexOf(id);if(idx<0)return false;state.inventory.splice(idx,1);save()}
-  if(id==='potion_life') player.hp=Math.min(100,player.hp+25); else if(id==='elixir_echo'){state.essence+=20;resonanceTime=Math.max(resonanceTime,5)} else if(id==='speed_vial'){dashCD=0;player.x+=.01}
-  if(!API_BASE||!AUTH_TOKEN)save(); buildInventory();updateHUD();notifyShop(`${item.icon} ${item.name} usado!`);return true;
+  const idx=state.inventory.indexOf(id);if(idx<0)return false; state.inventory.splice(idx,1);
+  if(id==='potion_life') player.hp=Math.min(100,player.hp+25);
+  else if(id==='elixir_echo') {state.essence+=20; resonanceTime=Math.max(resonanceTime,5);}
+  else if(id==='speed_vial') {dashCD=0; player.x+=0.01;}
+  save();buildInventory();updateHUD();notifyShop(`${item.icon} ${item.name} usado!`);return true;
 }
 
 let gl,program,canvas,raf,last=0,keys={},time=0,attackCD=0,echoCD=0,dashCD=0,parryCD=0,combo=0,comboTimer=0,resonanceTime=0,gameRunning=false,fallback2D=false;
@@ -367,25 +345,22 @@ async function digestPassword(text){
 }
 async function submitAuth(){
   const user=($('#authUser')?.value||'').trim(); const pass=$('#authPass')?.value||''; const pass2=$('#authPass2')?.value||''; const msg=$('#authMsg');
-  if(user.length<3||pass.length<8){msg.textContent='Use pelo menos 3 caracteres no usuário e 8 na senha.';return}
-  if(authMode==='register'&&pass!==pass2){msg.textContent='As senhas não conferem.';return}
-  if(API_BASE){
-    try{
-      const endpoint=authMode==='register'?'/api/auth/register':'/api/auth/login';
-      const r=await apiRequest(endpoint,{method:'POST',body:JSON.stringify({user,password:pass})});
-      AUTH_TOKEN=r.token;localStorage.setItem('echobound_auth_token',AUTH_TOKEN);
-      const localHadProgress=hasMeaningfulLocalProgress();
-      if(localHadProgress&&authMode==='register'){
-        try{const m=await serverAction({type:'migrate',state});applyServerState(m.state)}catch{}
-      } else applyServerState(r.state);
-      SERVER_ONLINE=true; enterGame(r.state.name||user); msg.textContent=''; return;
-    }catch(e){
-      if(authMode==='login')msg.textContent='Servidor indisponível ou credenciais inválidas. O modo local será usado apenas como fallback.';
-    }
-  }
+  if(user.length<3||pass.length<4){msg.textContent='Use pelo menos 3 caracteres no usuário e 4 na senha.';return}
   const key='echobound_account_'+user.toLowerCase(); const hash=await digestPassword(pass);
-  if(authMode==='register'){if(localStorage.getItem(key)){msg.textContent='Essa conta já existe neste navegador.';return}localStorage.setItem(key,JSON.stringify({user,hash,name:user}));enterGame(user)}
-  else {const account=JSON.parse(localStorage.getItem(key)||'null');if(!account||account.hash!==hash){msg.textContent='Usuário ou senha incorretos neste navegador.';return}enterGame(account.name||user)}
+  if(authMode==='register'){
+    if(pass!==pass2){msg.textContent='As senhas não conferem.';return}
+    if(localStorage.getItem(key)){msg.textContent='Essa conta já existe neste navegador.';return}
+    localStorage.setItem(key,JSON.stringify({user,hash,name:user})); enterGame(user);
+  }else{
+    const account=JSON.parse(localStorage.getItem(key)||'null');
+    if(!account||account.hash!==hash){msg.textContent='Usuário ou senha incorretos neste navegador.';return}
+    enterGame(account.name||user);
+  }
+}
+function enterGame(name){
+  state.name=name; localStorage.setItem('echobound_session',JSON.stringify({name}));
+  $('#auth').classList.add('hidden'); $('#topbar').classList.remove('hidden'); $('#app').classList.remove('hidden'); $('#dock').classList.remove('hidden');
+  $('#playerName').textContent=name; $('#authMsg').textContent=''; save(); show('lobby'); if(!localStorage.getItem('echobound_vmeta_intro')){localStorage.setItem('echobound_vmeta_intro','1');showCutscene('O Despertar do Eco','As 20 regiões começaram a perder a memória dos seus mundos. Você é o próximo Guardião do Eco. Reúna os fragmentos e alcance o Núcleo do Eco.');}
 }
 function initAuth(){
   try{const session=JSON.parse(localStorage.getItem('echobound_session')||'null'); if(session?.name){enterGame(session.name);return}}catch{}
@@ -406,7 +381,7 @@ function joinRoom(){
 function connectOnline(action){
   try{socket=new WebSocket(ONLINE_WS_URL);setOnlineStatus('Conectando...','Estabelecendo conexão com o servidor de partidas.');socket.onopen=()=>{setOnlineStatus('Online conectado','Sala sincronizada com o servidor.',true);socket.send(JSON.stringify({type:action,room:currentRoom,name:state.name}))};socket.onmessage=e=>{try{const m=JSON.parse(e.data);if(m.room){currentRoom=m.room;renderRoom()}}catch{}};socket.onerror=()=>setOnlineStatus('Servidor indisponível','A sala continua disponível no modo local.');socket.onclose=()=>{if(currentRoom)setOnlineStatus('Conexão encerrada','Você ainda pode jogar localmente.')}}catch(e){setOnlineStatus('Servidor indisponível','Configure ECHOBOUND_CONFIG.wsUrl para ativar o multiplayer real.')}}
 window.addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','e','E'].includes(e.key))e.preventDefault();keys[e.key]=true;if(sceneMode==='lobby'&&e.key.toLowerCase()==='e'){interactLobby();return}if(e.code==='Space')attack();if(e.key.toLowerCase()==='r')echo();if(e.key.toLowerCase()==='f')special();if(e.key.toLowerCase()==='c')parry();if(e.key==='Shift')dash();if(e.key==='Escape')$('#pauseMenu')?.classList.toggle('hidden')});window.addEventListener('keyup',e=>keys[e.key]=false);window.addEventListener('resize',resize);
-$('#qualitySelect')?.addEventListener('change',e=>{state.quality=e.target.value;resize();save()});$('#releaseQuality')?.addEventListener('change',e=>{state.quality=e.target.value;$('#qualitySelect').value=state.quality;resize();save();});$('#difficultySelect')?.addEventListener('change',async e=>{const next=e.target.value;if(API_BASE&&AUTH_TOKEN){try{const r=await serverAction({type:'set_difficulty',difficulty:next});applyServerState(r.state)}catch{e.target.value=state.difficulty;notifyShop('Dificuldade recusada pelo servidor.');return}}else{state.difficulty=next;save()}notifyShop('Dificuldade: '+state.difficulty);});$('#cutsceneContinue')?.addEventListener('click',hideCutscene);
+$('#qualitySelect')?.addEventListener('change',e=>{state.quality=e.target.value;resize();save()});$('#releaseQuality')?.addEventListener('change',e=>{state.quality=e.target.value;$('#qualitySelect').value=state.quality;resize();save();});$('#difficultySelect')?.addEventListener('change',e=>{state.difficulty=e.target.value;save();notifyShop('Dificuldade: '+state.difficulty);});$('#cutsceneContinue')?.addEventListener('click',hideCutscene);
 function boot(){buildMap();buildPhases();buildCodex();buildInventory();buildMissions();buildDeluxe();bindUI();runQA();$('#boot')?.classList.add('hidden');try{initGL();}catch(err){console.error(err);$('#renderNotice').textContent='3D indisponível: ative a aceleração gráfica/WebGL.';$('#renderNotice').classList.remove('hidden')}initAuth();save()}
 boot();
 

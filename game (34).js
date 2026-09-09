@@ -8,37 +8,7 @@ const REGIONS=[
 ];
 const RACES=[['Zumbis','#7b9a75'],['Esqueletos','#c8cbd1'],['Bandidos','#a26a45'],['Orcs','#6ca344'],['Magos','#8b69e8'],['Feras','#9c7149'],['Espíritos','#8adbd7'],['Constructos','#7f92a2'],['Aranhas','#72558f'],['Draconianos','#b65b46']];
 const state=Object.assign({region:0,phase:0,xp:0,coins:250,shards:20,essence:0,level:1,name:'Aventureiro',quality:'ultra8k',difficulty:'Normal',completedPhases:0,totalBossesDefeated:0,antiTamperAlerts:0,saveSeq:0,lastActionAt:0,inventory:[],equipped:{},kills:0,bosses:0,missionsClaimed:[],achievements:[],totalCoinsEarned:250},(()=>{try{return JSON.parse(localStorage.getItem('echobound_vmeta2027')||localStorage.getItem('echobound_vultra9999')||localStorage.getItem('echobound_vultra7000')||localStorage.getItem('echobound_vultra6000')||'{}')}catch{return {}}})());
-if(state.__integrity && state.__integrity!==stateHash({...state,__integrity:undefined})){state.antiTamperAlerts=(state.antiTamperAlerts||0)+1}delete state.__integrity;
-const API_BASE=String(window.ECHOBOUND_CONFIG?.apiBase||'').replace(/\/$/,'');
-let AUTH_TOKEN=localStorage.getItem('echobound_auth_token')||'';
-let SERVER_ONLINE=false;
-async function apiRequest(path, options={}){
-  if(!API_BASE) throw new Error('backend_not_configured');
-  const headers=Object.assign({'Content-Type':'application/json'},options.headers||{});
-  if(AUTH_TOKEN) headers.Authorization='Bearer '+AUTH_TOKEN;
-  const res=await fetch(API_BASE+path,{...options,headers});
-  const data=await res.json().catch(()=>({}));
-  if(!res.ok) throw new Error(data.error||('http_'+res.status));
-  return data;
-}
-function applyServerState(serverState){
-  if(!serverState||typeof serverState!=='object')return;
-  Object.keys(serverState).forEach(k=>{state[k]=serverState[k]});
-  delete state.__integrity;
-  sanitizeState();
-  localStorage.setItem('echobound_vmeta2027',JSON.stringify({...state,__integrity:stateHash(state)}));
-  updateHUD(); buildInventory(); buildDeluxe(); updateLobbyDashboard();
-}
-function hasMeaningfulLocalProgress(){return !!(state.completedPhases||state.kills||state.bosses||state.inventory?.length||state.xp||state.coins!==250||state.essence||state.achievements?.length)}
-async function serverAction(action){
-  if(!API_BASE||!AUTH_TOKEN) throw new Error('backend_not_ready');
-  return apiRequest('/api/action',{method:'POST',body:JSON.stringify(action)});
-}
-async function syncServerState(){
-  if(!API_BASE||!AUTH_TOKEN)return false;
-  try{const r=await apiRequest('/api/state');applyServerState(r.state);SERVER_ONLINE=true;return true}catch(e){SERVER_ONLINE=false;return false}
-}
-if(!Array.isArray(state.inventory)) state.inventory=[];
+if(state.__integrity && state.__integrity!==stateHash({...state,__integrity:undefined})){state.antiTamperAlerts=(state.antiTamperAlerts||0)+1}delete state.__integrity;if(!Array.isArray(state.inventory)) state.inventory=[];
 if(!state.equipped || typeof state.equipped!=='object') state.equipped={};
 if(!Array.isArray(state.missionsClaimed)) state.missionsClaimed=[];
 if(!Array.isArray(state.achievements)) state.achievements=[];
@@ -48,8 +18,6 @@ state.totalCoinsEarned=Number.isFinite(state.totalCoinsEarned)?state.totalCoinsE
 state.essence=Number.isFinite(state.essence)?state.essence:0;
 state.style=state.style||'Caçador';state.difficulty=state.difficulty||'Normal';
 state.skills=Array.isArray(state.skills)?state.skills:[];
-state.commerce=state.commerce&&typeof state.commerce==='object'?state.commerce:{buys:0,sells:0,spent:0,earned:0,history:[]};
-state.commerce.history=Array.isArray(state.commerce.history)?state.commerce.history:[];
 const MISSIONS=[
  {id:'first_step',name:'Primeiro Eco',desc:'Derrote 3 inimigos.',target:3,type:'kills',rewardCoins:40,rewardXp:30},
  {id:'collector',name:'Colecionador',desc:'Acumule 300 Echo Coins ganhos.',target:300,type:'coins',rewardCoins:75,rewardXp:60},
@@ -69,9 +37,9 @@ const DELUXE_SKILLS=[
 ];
 const STYLE_DATA={'Caçador':{damage:35,speed:12,echo:75},'Guardião':{damage:30,speed:10,echo:95},'Arcanista':{damage:26,speed:11,echo:125}};const DIFFICULTY_DATA={'Fácil':{hp:.75,enemy:0.75,damage:.7},'Normal':{hp:1,enemy:1,damage:1},'Difícil':{hp:1.35,enemy:1.2,damage:1.25},'Pesadelo':{hp:1.8,enemy:1.45,damage:1.55}};state.difficulty=DIFFICULTY_DATA[state.difficulty]?state.difficulty:'Normal';
 function hasSkill(id){return state.skills.includes(id)}
-async function buySkill(id){const sk=DELUXE_SKILLS.find(x=>x.id===id);if(!sk||hasSkill(id))return;if(API_BASE&&AUTH_TOKEN){try{const r=await serverAction({type:'buy_skill',skillId:id});applyServerState(r.state);buildDeluxe();updateHUD();notifyShop('◈ Técnica desbloqueada no servidor: '+sk.name);return}catch(e){notifyShop(e.message==='insufficient_essence'?'Essência insuficiente.':'Desbloqueio recusado pelo servidor.');return}}if(state.essence<sk.cost){notifyShop('Essência insuficiente.');return}state.essence-=sk.cost;state.skills.push(id);save();buildDeluxe();updateHUD();notifyShop('◈ Técnica desbloqueada: '+sk.name)}
+function buySkill(id){const sk=DELUXE_SKILLS.find(x=>x.id===id);if(!sk||hasSkill(id))return;if(state.essence<sk.cost){notifyShop('Essência insuficiente.');return}state.essence-=sk.cost;state.skills.push(id);save();buildDeluxe();updateHUD();notifyShop('◈ Técnica desbloqueada: '+sk.name)}
 function activateResonance(){if(state.essence<25){notifyShop('Você precisa de 25 Essências.');return}state.essence-=25;resonanceTime=15;save();buildDeluxe();notifyShop('⚡ Ressonância ativa por 15s!')}
-async function cycleStyle(){const k=Object.keys(STYLE_DATA),i=k.indexOf(state.style),next=k[(i+1)%k.length];if(API_BASE&&AUTH_TOKEN){try{const r=await serverAction({type:'set_style',style:next});applyServerState(r.state);buildDeluxe();notifyShop('🔄 Estilo: '+state.style);return}catch(e){notifyShop('Estilo recusado pelo servidor.');return}}state.style=next;save();buildDeluxe();notifyShop('🔄 Estilo: '+state.style)}
+function cycleStyle(){const k=Object.keys(STYLE_DATA),i=k.indexOf(state.style);state.style=k[(i+1)%k.length];save();buildDeluxe();notifyShop('🔄 Estilo: '+state.style)}
 function buildDeluxe(){const g=$('#skillGrid');if(g)g.innerHTML=DELUXE_SKILLS.map(sk=>`<div class="skill-card ${hasSkill(sk.id)?'unlocked':''}"><b>${hasSkill(sk.id)?'✅':'🔒'} ${sk.name}</b><small>${sk.desc}</small><div style="margin-top:7px;color:#6fdcff">${hasSkill(sk.id)?'Desbloqueada':'Custo: '+sk.cost+' ◈'}</div><button data-skill="${sk.id}" ${hasSkill(sk.id)?'disabled':''}>${hasSkill(sk.id)?'Ativa':'Desbloquear'}</button></div>`).join('');$$('[data-skill]').forEach(b=>b.onclick=()=>buySkill(b.dataset.skill));if($('#combatStyle'))$('#combatStyle').innerHTML=`<b>${state.style}</b><p>Dano ${STYLE_DATA[state.style].damage} • Vel. ${STYLE_DATA[state.style].speed} • Eco ${STYLE_DATA[state.style].echo}</p>`;if($('#deluxeEssence'))$('#deluxeEssence').textContent=state.essence;const pct=resonanceTime>0?resonanceTime/15*100:0;if($('#resonanceBar'))$('#resonanceBar').style.width=pct+'%';if($('#resonanceTitle'))$('#resonanceTitle').textContent=resonanceTime>0?'Ressonância Ativa':'Ressonância Inativa';if($('#resonanceText'))$('#resonanceText').textContent=resonanceTime>0?'Ataques recebem +50% e o jogador ignora dano por uma curta janela.':'Ative usando 25 Essências.'}
 
 function missionProgress(m){if(m.type==='kills')return Math.min(m.target,state.kills);if(m.type==='coins')return Math.min(m.target,state.totalCoinsEarned);if(m.type==='bosses')return Math.min(m.target,state.bosses);return 0}
@@ -95,46 +63,10 @@ const ITEM_BY_ID=Object.fromEntries(Object.values(SHOP_ITEMS).map(x=>[x.id,x]));
 Object.entries(SHOP_ITEMS).forEach(([name,item])=>item.name=name);
 function ownedCount(id){return state.inventory.filter(x=>x===id).length}
 function isEquipped(id){return Object.values(state.equipped).includes(id)}
-function commerceLog(type,item,amount){state.commerce.history.unshift({type,item:item.name,amount,t:Date.now()});state.commerce.history=state.commerce.history.slice(0,20);}
-function validItem(item){return item&&Number.isFinite(item.price)&&item.price>=0&&Number.isFinite(item.power)&&item.id&&ITEM_BY_ID[item.id]===item}
 let shopNoticeTimer=0;
-function notifyShop(msg){const el=$('#shopNotice');if(!el)return;el.textContent=msg;el.classList.remove('hidden');clearTimeout(shopNoticeTimer);shopNoticeTimer=setTimeout(()=>el.classList.add('hidden'),2600)}
-async function buyItem(name){
-  const item=SHOP_ITEMS[name];
-  if(!validItem(item)){notifyShop('Item inválido.');return false;}
-  if(API_BASE&&AUTH_TOKEN){
-    try{const r=await serverAction({type:'buy',itemId:item.id});applyServerState(r.state);buildShop($('#shopTitle')?.textContent||'Arsenal');notifyShop(`${item.icon} ${name} comprado no servidor por ${item.price} ✦.`);return true}
-    catch(e){notifyShop(e.message==='insufficient_coins'?'Echo Coins insuficientes.':'Compra recusada pelo servidor.');return false}
-  }
-  const count=ownedCount(item.id); if(count>=99){notifyShop('Limite de 99 unidades atingido.');return false}
-  if(state.coins<item.price){notifyShop('Echo Coins insuficientes.');return false}
-  state.coins-=item.price; state.inventory.push(item.id); state.commerce.buys++; state.commerce.spent+=item.price; commerceLog('Compra',item,-item.price);
-  save(); updateHUD(); buildShop($('#shopTitle')?.textContent||'Arsenal'); notifyShop(`${item.icon} ${name} comprado por ${item.price} ✦.`); return true;
-}
-async function sellItem(id){
-  const item=ITEM_BY_ID[id];
-  if(!validItem(item)||!ownedCount(id)){notifyShop('Você não possui esse item.');return false;}
-  if(API_BASE&&AUTH_TOKEN){
-    try{const r=await serverAction({type:'sell',itemId:id});applyServerState(r.state);buildInventory();buildShop($('#shopTitle')?.textContent||'Arsenal');notifyShop(`${item.icon} ${item.name} vendido pelo servidor.`);return true}
-    catch(e){notifyShop('Venda recusada pelo servidor.');return false}
-  }
-  const idx=state.inventory.indexOf(id); if(idx<0)return false; const refund=Math.max(1,Math.floor(item.price*.6)); const wasEquipped=Object.entries(state.equipped).find(([,v])=>v===id); if(wasEquipped) delete state.equipped[wasEquipped[0]];
-  state.inventory.splice(idx,1); state.coins+=refund; state.commerce.sells++; state.commerce.earned+=refund; commerceLog('Venda',item,refund); save(); updateHUD(); buildInventory(); buildShop($('#shopTitle')?.textContent||'Arsenal'); notifyShop(`${item.icon} ${item.name} vendido por ${refund} ✦.`); return true;
-}
-async function equipItem(id){
-  const item=ITEM_BY_ID[id]; if(!validItem(item)||!ownedCount(id))return false; if(item.slot==='consumível'){notifyShop('Consumíveis são usados no inventário.');return false;}
-  if(API_BASE&&AUTH_TOKEN){try{const r=await serverAction({type:'equip',itemId:id});applyServerState(r.state);buildInventory();updateHUD();notifyShop(`${item.icon} ${item.name} equipado pelo servidor!`);return true}catch(e){notifyShop('Equipamento recusado pelo servidor.');return false}}
-  state.equipped[item.slot]=id; save(); buildInventory(); updateHUD(); notifyShop(`${item.icon} ${item.name} equipado!`); return true;
-}
-async function unequipItem(slot){if(!state.equipped[slot])return;if(API_BASE&&AUTH_TOKEN){try{const r=await serverAction({type:'unequip',slot});applyServerState(r.state);buildInventory();notifyShop('Equipamento removido.');return true}catch(e){notifyShop('Ação recusada pelo servidor.');return false}}delete state.equipped[slot];save();buildInventory();notifyShop('Equipamento removido.');return true}
-async function useConsumable(id){
-  const item=ITEM_BY_ID[id]; if(!item||item.slot!=='consumível'||!ownedCount(id)){notifyShop('Consumível indisponível.');return false;}
-  if(sceneMode!=='game'){notifyShop('Entre em uma fase para usar consumíveis.');return false;}
-  if(API_BASE&&AUTH_TOKEN){try{const r=await serverAction({type:'use_consumable',itemId:id});applyServerState(r.state);}catch(e){notifyShop('Uso recusado pelo servidor.');return false}}
-  else {const idx=state.inventory.indexOf(id);if(idx<0)return false;state.inventory.splice(idx,1);save()}
-  if(id==='potion_life') player.hp=Math.min(100,player.hp+25); else if(id==='elixir_echo'){state.essence+=20;resonanceTime=Math.max(resonanceTime,5)} else if(id==='speed_vial'){dashCD=0;player.x+=.01}
-  if(!API_BASE||!AUTH_TOKEN)save(); buildInventory();updateHUD();notifyShop(`${item.icon} ${item.name} usado!`);return true;
-}
+function notifyShop(msg){const el=$('#shopNotice');if(!el)return;el.textContent=msg;el.classList.remove('hidden');clearTimeout(shopNoticeTimer);shopNoticeTimer=setTimeout(()=>el.classList.add('hidden'),2200)}
+function buyItem(name){const item=SHOP_ITEMS[name];if(!item)return;if(state.coins<item.price){notifyShop('Echo Coins insuficientes.');return;}state.coins-=item.price;state.inventory.push(item.id);save();buildShop($('#shopTitle')?.textContent||'Arsenal');notifyShop(`${item.icon} ${name} comprado!`)}
+function equipItem(id){const item=ITEM_BY_ID[id];if(!item||!ownedCount(id))return;if(item.slot==='consumível'){notifyShop('Consumíveis não precisam ser equipados.');return;}state.equipped[item.slot]=id;save();buildInventory();notifyShop(`${item.icon} ${item.name} equipado!`)}
 
 let gl,program,canvas,raf,last=0,keys={},time=0,attackCD=0,echoCD=0,dashCD=0,parryCD=0,combo=0,comboTimer=0,resonanceTime=0,gameRunning=false,fallback2D=false;
 let authMode='login', currentRoom=null, socket=null;
@@ -275,49 +207,25 @@ function startGame(){
 function loop(now){if(!gameRunning)return;const dt=Math.min(.033,(now-last)/1000||.016);last=now;if($('#pauseMenu').classList.contains('hidden')){update(dt);try{render()}catch(err){console.error('EchoBound render error',err);if(!fallback2D){fallback2D=true;$('#fallbackCanvas')?.classList.add('active');}}}raf=requestAnimationFrame(loop)}
 function stateHash(obj){try{const s=JSON.stringify(obj,(k,v)=>k==='lastActionAt'?0:v);let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0).toString(16)}catch{return '0'}}
 function sanitizeState(){let alerts=0;state.coins=clamp(Number(state.coins)||0,0,1e9);state.shards=clamp(Number(state.shards)||0,0,1e7);state.essence=clamp(Number(state.essence)||0,0,1e7);state.xp=clamp(Number(state.xp)||0,0,1e9);state.level=clamp(Number(state.level)||1,1,100000);state.region=clamp(Number(state.region)||0,0,19);state.phase=clamp(Number(state.phase)||0,0,24);state.kills=Math.max(0,Math.floor(Number(state.kills)||0));state.bosses=Math.max(0,Math.floor(Number(state.bosses)||0));state.totalBossesDefeated=Math.max(0,Math.floor(Number(state.totalBossesDefeated)||0));state.completedPhases=Math.max(0,Math.floor(Number(state.completedPhases)||0));
-  state.commerce=state.commerce&&typeof state.commerce==='object'?state.commerce:{buys:0,sells:0,spent:0,earned:0,history:[]};state.commerce.buys=Math.max(0,Math.floor(Number(state.commerce.buys)||0));state.commerce.sells=Math.max(0,Math.floor(Number(state.commerce.sells)||0));state.commerce.spent=Math.max(0,Math.floor(Number(state.commerce.spent)||0));state.commerce.earned=Math.max(0,Math.floor(Number(state.commerce.earned)||0));state.commerce.history=Array.isArray(state.commerce.history)?state.commerce.history.slice(0,20):[];
   state.inventory=state.inventory.filter(id=>ITEM_BY_ID[id]);Object.keys(state.equipped).forEach(slot=>{if(!state.inventory.includes(state.equipped[slot])){delete state.equipped[slot];alerts++}});
   if(alerts){state.antiTamperAlerts=(state.antiTamperAlerts||0)+alerts;notifyShop('🛡️ Integridade corrigida.');}return alerts}
 function antiTamperScan(){const alerts=sanitizeState();const box=$('#antiTamperStatus');const score=$('#antiTamperScore');if(box)box.textContent=alerts?'Proteção corrigiu dados':'Proteção ativa';if(score)score.textContent=`${state.antiTamperAlerts||0} alertas acumulados`;return alerts}
 function save(){try{antiTamperScan();state.saveSeq=(state.saveSeq||0)+1;localStorage.setItem('echobound_vmeta2027',JSON.stringify({...state,__integrity:stateHash(state)}))}catch{}}
 
-function updateLobbyDashboard(){const byId=(id,v)=>{const e=$('#'+id);if(e)e.textContent=v};byId('lobbyNameInfo',state.name);byId('lobbyLevelInfo',state.level);byId('lobbyCoinsInfo',state.coins);byId('lobbyShardsInfo',state.shards);byId('lobbyEssenceInfo',state.essence);byId('lobbyXpInfo',state.xp);byId('lobbyKillsInfo',state.kills);byId('lobbyBossesInfo',state.bosses);byId('lobbyAchievementsInfo',`${state.achievements.length}/${ACHIEVEMENTS.length}`);byId('lobbyRegionInfo',`${state.region+1}/20`);byId('lobbyPhaseInfo',`${state.phase+1}/25`);byId('lobbyJourneyInfo',`Região ${state.region+1} • Fase ${state.phase+1} • ${state.difficulty||'Normal'}`);const pct=Math.max(3,Math.min(100,Math.round(((state.region*25+state.phase+1)/(20*25))*100)));const bar=$('#lobbyProgressBar');if(bar)bar.style.width=pct+'%'}
-function updateHUD(){checkProgress();updateLobbyDashboard();const phase=state.phase+1,bossPhase=state.phase%25===24;$('#hudName').textContent=state.name;$('#hudLevel').textContent=state.level;$('#hudCoins').textContent=state.coins;$('#hudShards').textContent=state.shards;$('#hudEssence').textContent=state.essence;$('#comboLabel').textContent=combo;$('#regionHud').textContent=REGIONS[state.region][0];$('#phaseHud').textContent=`FASE ${phase}/25`;$('#objective').textContent=bossPhase?'Derrote o Guardião':'Explore, lute e encontre o próximo eco';$('#hpBar').style.width=player.hp+'%';$('#xpBar').style.width=(state.xp%100)+'%';$('#chapterLabel').textContent=bossPhase?'CAPÍTULO BOSS':'CAPÍTULO '+((state.phase%6)+1)+'/6';const secs=Math.max(0,Math.ceil(phaseTimer));$('#timerLabel').textContent=`${Math.floor(secs/60).toString().padStart(2,'0')}:${(secs%60).toString().padStart(2,'0')}`}
+function updateHUD(){checkProgress();const phase=state.phase+1,bossPhase=state.phase%25===24;$('#hudName').textContent=state.name;$('#hudLevel').textContent=state.level;$('#hudCoins').textContent=state.coins;$('#hudShards').textContent=state.shards;$('#hudEssence').textContent=state.essence;$('#comboLabel').textContent=combo;$('#regionHud').textContent=REGIONS[state.region][0];$('#phaseHud').textContent=`FASE ${phase}/25`;$('#objective').textContent=bossPhase?'Derrote o Guardião':'Explore, lute e encontre o próximo eco';$('#hpBar').style.width=player.hp+'%';$('#xpBar').style.width=(state.xp%100)+'%';$('#chapterLabel').textContent=bossPhase?'CAPÍTULO BOSS':'CAPÍTULO '+((state.phase%6)+1)+'/6';const secs=Math.max(0,Math.ceil(phaseTimer));$('#timerLabel').textContent=`${Math.floor(secs/60).toString().padStart(2,'0')}:${(secs%60).toString().padStart(2,'0')}`}
 function show(id){
   $$('.screen').forEach(x=>x.classList.remove('active'));
   const el=$('#'+id); if(el)el.classList.add('active');
   const hideDock=['lobby','game'].includes(id); $('#dock').classList.toggle('hidden',hideDock);
-  document.body.classList.toggle('clean-lobby-mode',id==='lobby');
-  if(id==='lobby'){sceneMode='lobby';updateLobbyDashboard();startGame();} else if(id==='game'){sceneMode='game';startGame();} else {gameRunning=false;$('#fallbackCanvas')?.classList.remove('active');}
+  if(id==='lobby'){sceneMode='lobby';startGame();} else if(id==='game'){sceneMode='game';startGame();} else {gameRunning=false;$('#fallbackCanvas')?.classList.remove('active');}
 }
 function buildMissions(){const g=$('#missionGrid');if(!g)return;const cards=MISSIONS.map(m=>{const p=missionProgress(m),done=p>=m.target,claimed=state.missionsClaimed.includes(m.id);return `<article class="panel mission-card ${done?'done':''}"><p class="eyebrow">${claimed?'CONCLUÍDA':'MISSÃO'}</p><h3>${m.name}</h3><p>${m.desc}</p><div class="progress"><i style="width:${Math.round(p/m.target*100)}%"></i></div><small>${p}/${m.target}</small><div class="reward">🎁 +${m.rewardCoins} ✦ • +${m.rewardXp} XP</div><button ${(!done||claimed)?'disabled':''} data-claim="${m.id}">${claimed?'✅ Recompensa recebida':done?'🏆 Resgatar recompensa':'🔒 Em progresso'}</button></article>`}).join('');const ach=ACHIEVEMENTS.map(a=>`<article class="panel mission-card ${state.achievements.includes(a.id)?'done':''}"><p class="eyebrow">${state.achievements.includes(a.id)?'CONQUISTA DESBLOQUEADA':'CONQUISTA'}</p><h3>🏆 ${a.name}</h3><p>${a.desc}</p><small>${state.achievements.includes(a.id)?'Desbloqueada':'Ainda não desbloqueada'}</small></article>`).join('');g.innerHTML=cards+ach;$$('[data-claim]').forEach(b=>b.onclick=()=>claimMission(b.dataset.claim))}
 function buildMap(){const g=$('#regionGrid');if(!g)return;g.innerHTML=REGIONS.map((r,i)=>`<button class="panel" data-region="${i}"><b>${i+1}. ${r[0]}</b><small>25 fases • 100 chefes</small></button>`).join('');$$('[data-region]').forEach(b=>b.onclick=()=>{state.region=+b.dataset.region;buildPhases();show('region');save()})}
 function buildPhases(){const g=$('#phaseGrid');if(!g)return;$('#regionTitle').textContent=REGIONS[state.region][0];$('#regionEyebrow').textContent=`REGIÃO ${state.region+1}/20`;$('#regionDesc').textContent='25 fases, incluindo uma batalha de Guardião a cada ciclo.';$('#regionStats').innerHTML=`<b>25 fases</b><b>100 chefes</b><b>10 raças</b><b>60/90 min</b>`;g.innerHTML=Array.from({length:25},(_,i)=>{const boss=i===24;return `<button class="panel" data-phase="${i}"><b>${boss?'👑':'⚔️'} Fase ${i+1}</b><small>${boss?'Boss • 90 minutos':'Aventura • 60 minutos'}</small></button>`}).join('');$$('[data-phase]').forEach(b=>b.onclick=()=>{state.phase=+b.dataset.phase;show('game');save()})}
 function buildCodex(){const g=$('#bossGrid');if(!g)return;g.innerHTML=Array.from({length:20},(_,r)=>`<article class="panel"><b>${REGIONS[r][0]}</b><p>100 chefes • elementos • arenas • modificadores</p></article>`).join('')}
-function buildInventory(){
-  const g=$('#inventoryGrid'); if(!g)return;
-  const owned=[...new Set(state.inventory)].map(id=>ITEM_BY_ID[id]).filter(Boolean);
-  const slots=[['arma','Arma'],['armadura','Armadura'],['relíquia','Relíquia']];
-  const slotCards=slots.map(([slot,label])=>{const id=state.equipped[slot],it=ITEM_BY_ID[id];return `<article class="panel equip-slot"><small>${label}</small><b>${it?it.icon+' '+it.name:'— Vazio —'}</b><span>${it?it.rarity+' • Poder +'+it.power:'Nenhum item equipado'}</span>${it?`<button data-unequip="${slot}">↩ Remover</button>`:''}</article>`}).join('');
-  const cards=owned.length?owned.map(it=>{const eq=isEquipped(it.id);let action;if(it.slot==='consumível') action=`<button data-use="${it.id}">🧪 Usar</button>`; else action=`<button data-equip="${it.id}">${eq?'✅ Equipado':'⚡ Equipar'}</button>`;return `<article class="panel item-card"><div class="icon">${it.icon}</div><h3>${it.name}</h3><p>${it.desc}</p><small>${it.rarity} • Poder +${it.power} • ${ownedCount(it.id)}x • venda ${Math.max(1,Math.floor(it.price*.6))} ✦</small><div class="item-actions">${action}<button class="danger" data-sell="${it.id}">💰 Vender</button></div></article>`}).join(''):`<article class="panel"><h3>Inventário vazio</h3><p>Compre itens nos comerciantes do Santuário.</p></article>`;
-  const hist=state.commerce.history?.slice(0,6).map(x=>`<div><b>${x.type}</b> — ${x.item} <span>${x.amount>0?'+':''}${x.amount} ✦</span></div>`).join('')||'<div>Nenhuma transação ainda.</div>';
-  g.innerHTML=slotCards+cards+`<article class="panel commerce-history"><p class="eyebrow">CARTEIRA</p><h3>Resumo do comércio</h3><p>Compras: ${state.commerce.buys} • Vendas: ${state.commerce.sells}</p><p>Gasto: ${state.commerce.spent} ✦ • Recebido: ${state.commerce.earned} ✦</p>${hist}</article>`;
-  $$('[data-equip]').forEach(b=>b.onclick=()=>equipItem(b.dataset.equip));
-  $$('[data-unequip]').forEach(b=>b.onclick=()=>unequipItem(b.dataset.unequip));
-  $$('[data-use]').forEach(b=>b.onclick=()=>useConsumable(b.dataset.use));
-  $$('[data-sell]').forEach(b=>b.onclick=()=>sellItem(b.dataset.sell));
-}
+function buildInventory(){const g=$('#inventoryGrid');if(!g)return;const owned=[...new Set(state.inventory)].map(id=>ITEM_BY_ID[id]).filter(Boolean);const slots=[['arma','Arma'],['armadura','Armadura'],['relíquia','Relíquia']];const slotCards=slots.map(([slot,label])=>{const id=state.equipped[slot],it=ITEM_BY_ID[id];return `<article class="panel equip-slot"><small>${label}</small><b>${it?it.icon+' '+it.name:'— Vazio —'}</b><span>${it?it.rarity+' • Poder +'+it.power:'Nenhum item equipado'}</span></article>`}).join('');g.innerHTML=slotCards+(owned.length?owned.map(it=>`<article class="panel item-card"><div class="icon">${it.icon}</div><h3>${it.name}</h3><p>${it.desc}</p><small>${it.rarity} • Poder +${it.power} • ${ownedCount(it.id)}x</small><button ${it.slot==='consumível'?'disabled':''} data-equip="${it.id}">${isEquipped(it.id)?'✅ Equipado':'⚡ Equipar'}</button></article>`).join(''):`<article class="panel"><h3>Inventário vazio</h3><p>Compre itens nos comerciantes do Santuário.</p></article>`);$$('[data-equip]').forEach(b=>b.onclick=()=>equipItem(b.dataset.equip))}
 function buildStats(){const g=$('#statsGrid');if(!g)return;g.innerHTML=[['Nível',state.level],['XP',state.xp],['Echo Coins',state.coins],['Fragmentos',state.shards],['Essência do Eco',state.essence],['Estilo',state.style],['Região atual',`${state.region+1}/20`],['Fase atual',`${state.phase+1}/25`],['Inimigos derrotados',state.kills],['Chefes derrotados',state.bosses],['Conquistas',`${state.achievements.length}/${ACHIEVEMENTS.length}`],['Missões concluídas',`${state.missionsClaimed.length}/${MISSIONS.length}`]].map(([a,b])=>`<article class="panel stat-card"><small>${a}</small><b>${b}</b></article>`).join('')}
-function buildShop(shop){
-  const g=$('#shopGrid');if(!g)return;
-  const sets={Arsenal:['Espada do Eco','Arco Prismático','Lâmina Solar'],Ferreiro:['Armadura Lúmen','Escudo Guardião','Peitoral de Vhar'],Alquimista:['Poção de Vida','Elixir do Eco','Frasco de Velocidade'],Relíquias:['Amuleto Prismático','Relíquia do Eclipse','Fragmento Antigo']};
-  const names=sets[shop]||sets.Arsenal;
-  const cards=names.map(name=>{const it=SHOP_ITEMS[name],owned=ownedCount(it.id),can=state.coins>=it.price&&owned<99;return `<article class="panel item-card"><div class="icon">${it.icon}</div><h3>${it.name}</h3><p>${it.desc}</p><small>${it.rarity} • Poder +${it.power} • Estoque ${owned}/99</small><div class="item-actions"><button data-buy="${it.name}" ${can?'':'disabled'}>💰 Comprar • ${it.price} ✦</button><button class="danger" data-shop-sell="${it.id}" ${owned?'':'disabled'}>↩ Vender • ${Math.max(1,Math.floor(it.price*.6))} ✦</button></div></article>`}).join('');
-  const recent=state.commerce.history?.slice(0,4).map(x=>`<span>${x.type}: ${x.item} (${x.amount>0?'+':''}${x.amount}✦)</span>`).join(' • ')||'Sem transações';
-  g.innerHTML=`<article class="panel shop-wallet"><b>Saldo: ${state.coins} ✦</b><small>Compras ${state.commerce.buys} • Vendas ${state.commerce.sells}</small><div>${recent}</div></article>`+cards;
-  $$('[data-buy]').forEach(b=>b.onclick=()=>buyItem(b.dataset.buy));
-  $$('[data-shop-sell]').forEach(b=>b.onclick=()=>sellItem(b.dataset.shopSell));
-}
+function buildShop(shop){const g=$('#shopGrid');if(!g)return;const sets={Arsenal:['Espada do Eco','Arco Prismático','Lâmina Solar'],Ferreiro:['Armadura Lúmen','Escudo Guardião','Peitoral de Vhar'],Alquimista:['Poção de Vida','Elixir do Eco','Frasco de Velocidade'],Relíquias:['Amuleto Prismático','Relíquia do Eclipse','Fragmento Antigo']};g.innerHTML=(sets[shop]||sets.Arsenal).map(name=>{const it=SHOP_ITEMS[name];const owned=ownedCount(it.id);return `<article class="panel item-card"><div class="icon">${it.icon}</div><h3>${it.name}</h3><p>${it.desc}</p><small>${it.rarity} • Poder +${it.power}${owned?' • '+owned+'x no inventário':''}</small><button data-buy="${it.name}">💰 Comprar • ${it.price} ✦</button></article>`}).join('');$$('[data-buy]').forEach(b=>b.onclick=()=>buyItem(b.dataset.buy))}
 function renderRelease(){const el=$('#qaResults');if(!el)return;const g=window.__echoQA||{};el.innerHTML=[['JavaScript','OK',true],['Catálogo','2.000 chefes / 500 fases',true],['Anti-tamper',`${state.antiTamperAlerts||0} alertas`,(state.antiTamperAlerts||0)===0],['Integridade de save','Ativa',true],['Render 8K','Adaptativo',true],['Conexão online',ONLINE_WS_URL?'Configurada':'Requer WebSocket real',!!ONLINE_WS_URL],['QA 2000×',g.boss2000?'Concluído':'Disponível',!!g.boss2000]].map(x=>`<div>${x[2]?'✅':'⚠️'} <b>${x[0]}</b> — ${x[1]}</div>`).join('')}
 function runQA(){const r={};let ok=true;try{if(cubePos.length!==72)throw Error('cubePos');if(cubeNorm.length!==72)throw Error('cubeNorm');if(REGIONS.length!==20)throw Error('regions');r.catalog=true}catch{r.catalog=false;ok=false}
   // Deterministic end-to-end simulation of 500 phases × 4 boss encounters = 2,000 boss victories. This is a logic test, not a visual gameplay session.
@@ -367,25 +275,22 @@ async function digestPassword(text){
 }
 async function submitAuth(){
   const user=($('#authUser')?.value||'').trim(); const pass=$('#authPass')?.value||''; const pass2=$('#authPass2')?.value||''; const msg=$('#authMsg');
-  if(user.length<3||pass.length<8){msg.textContent='Use pelo menos 3 caracteres no usuário e 8 na senha.';return}
-  if(authMode==='register'&&pass!==pass2){msg.textContent='As senhas não conferem.';return}
-  if(API_BASE){
-    try{
-      const endpoint=authMode==='register'?'/api/auth/register':'/api/auth/login';
-      const r=await apiRequest(endpoint,{method:'POST',body:JSON.stringify({user,password:pass})});
-      AUTH_TOKEN=r.token;localStorage.setItem('echobound_auth_token',AUTH_TOKEN);
-      const localHadProgress=hasMeaningfulLocalProgress();
-      if(localHadProgress&&authMode==='register'){
-        try{const m=await serverAction({type:'migrate',state});applyServerState(m.state)}catch{}
-      } else applyServerState(r.state);
-      SERVER_ONLINE=true; enterGame(r.state.name||user); msg.textContent=''; return;
-    }catch(e){
-      if(authMode==='login')msg.textContent='Servidor indisponível ou credenciais inválidas. O modo local será usado apenas como fallback.';
-    }
-  }
+  if(user.length<3||pass.length<4){msg.textContent='Use pelo menos 3 caracteres no usuário e 4 na senha.';return}
   const key='echobound_account_'+user.toLowerCase(); const hash=await digestPassword(pass);
-  if(authMode==='register'){if(localStorage.getItem(key)){msg.textContent='Essa conta já existe neste navegador.';return}localStorage.setItem(key,JSON.stringify({user,hash,name:user}));enterGame(user)}
-  else {const account=JSON.parse(localStorage.getItem(key)||'null');if(!account||account.hash!==hash){msg.textContent='Usuário ou senha incorretos neste navegador.';return}enterGame(account.name||user)}
+  if(authMode==='register'){
+    if(pass!==pass2){msg.textContent='As senhas não conferem.';return}
+    if(localStorage.getItem(key)){msg.textContent='Essa conta já existe neste navegador.';return}
+    localStorage.setItem(key,JSON.stringify({user,hash,name:user})); enterGame(user);
+  }else{
+    const account=JSON.parse(localStorage.getItem(key)||'null');
+    if(!account||account.hash!==hash){msg.textContent='Usuário ou senha incorretos neste navegador.';return}
+    enterGame(account.name||user);
+  }
+}
+function enterGame(name){
+  state.name=name; localStorage.setItem('echobound_session',JSON.stringify({name}));
+  $('#auth').classList.add('hidden'); $('#topbar').classList.remove('hidden'); $('#app').classList.remove('hidden'); $('#dock').classList.remove('hidden');
+  $('#playerName').textContent=name; $('#authMsg').textContent=''; save(); show('lobby'); if(!localStorage.getItem('echobound_vmeta_intro')){localStorage.setItem('echobound_vmeta_intro','1');showCutscene('O Despertar do Eco','As 20 regiões começaram a perder a memória dos seus mundos. Você é o próximo Guardião do Eco. Reúna os fragmentos e alcance o Núcleo do Eco.');}
 }
 function initAuth(){
   try{const session=JSON.parse(localStorage.getItem('echobound_session')||'null'); if(session?.name){enterGame(session.name);return}}catch{}
@@ -406,7 +311,7 @@ function joinRoom(){
 function connectOnline(action){
   try{socket=new WebSocket(ONLINE_WS_URL);setOnlineStatus('Conectando...','Estabelecendo conexão com o servidor de partidas.');socket.onopen=()=>{setOnlineStatus('Online conectado','Sala sincronizada com o servidor.',true);socket.send(JSON.stringify({type:action,room:currentRoom,name:state.name}))};socket.onmessage=e=>{try{const m=JSON.parse(e.data);if(m.room){currentRoom=m.room;renderRoom()}}catch{}};socket.onerror=()=>setOnlineStatus('Servidor indisponível','A sala continua disponível no modo local.');socket.onclose=()=>{if(currentRoom)setOnlineStatus('Conexão encerrada','Você ainda pode jogar localmente.')}}catch(e){setOnlineStatus('Servidor indisponível','Configure ECHOBOUND_CONFIG.wsUrl para ativar o multiplayer real.')}}
 window.addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','e','E'].includes(e.key))e.preventDefault();keys[e.key]=true;if(sceneMode==='lobby'&&e.key.toLowerCase()==='e'){interactLobby();return}if(e.code==='Space')attack();if(e.key.toLowerCase()==='r')echo();if(e.key.toLowerCase()==='f')special();if(e.key.toLowerCase()==='c')parry();if(e.key==='Shift')dash();if(e.key==='Escape')$('#pauseMenu')?.classList.toggle('hidden')});window.addEventListener('keyup',e=>keys[e.key]=false);window.addEventListener('resize',resize);
-$('#qualitySelect')?.addEventListener('change',e=>{state.quality=e.target.value;resize();save()});$('#releaseQuality')?.addEventListener('change',e=>{state.quality=e.target.value;$('#qualitySelect').value=state.quality;resize();save();});$('#difficultySelect')?.addEventListener('change',async e=>{const next=e.target.value;if(API_BASE&&AUTH_TOKEN){try{const r=await serverAction({type:'set_difficulty',difficulty:next});applyServerState(r.state)}catch{e.target.value=state.difficulty;notifyShop('Dificuldade recusada pelo servidor.');return}}else{state.difficulty=next;save()}notifyShop('Dificuldade: '+state.difficulty);});$('#cutsceneContinue')?.addEventListener('click',hideCutscene);
+$('#qualitySelect')?.addEventListener('change',e=>{state.quality=e.target.value;resize();save()});$('#releaseQuality')?.addEventListener('change',e=>{state.quality=e.target.value;$('#qualitySelect').value=state.quality;resize();save();});$('#difficultySelect')?.addEventListener('change',e=>{state.difficulty=e.target.value;save();notifyShop('Dificuldade: '+state.difficulty);});$('#cutsceneContinue')?.addEventListener('click',hideCutscene);
 function boot(){buildMap();buildPhases();buildCodex();buildInventory();buildMissions();buildDeluxe();bindUI();runQA();$('#boot')?.classList.add('hidden');try{initGL();}catch(err){console.error(err);$('#renderNotice').textContent='3D indisponível: ative a aceleração gráfica/WebGL.';$('#renderNotice').classList.remove('hidden')}initAuth();save()}
 boot();
 

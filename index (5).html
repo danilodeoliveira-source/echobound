@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="boot"><div class="boot-logo">ECHOBOUND <span>vMetaModel2027 DELUXE EDITION</span></div><div class="boot-bar"><i></i></div><small>CARREGANDO MUNDO DE ECHOS...</small></div>
+  <div id="boot"><div class="boot-logo">ECHOBOUND <span>vMetaModel2027 FINAL</span></div><div class="boot-bar"><i></i></div><small>CARREGANDO MUNDO DE ECHOS...</small></div>
 
   <section id="auth" class="auth-screen hidden">
     <div class="auth-card">
@@ -36,71 +36,23 @@
   </header>
 
   <main id="app" class="hidden">
-    <section id="lobby" class="screen active lobby-dashboard-screen">
-      <div class="clean-lobby">
-        <div class="clean-lobby-head">
-          <div>
-            <p class="eyebrow clean-eyebrow">SANTUÁRIO DOS ECOS • vMetaModel2027</p>
-            <h1>LOBBY</h1>
-            <p class="clean-subtitle">Seu centro de aventura. Escolha uma atividade, prepare seu equipamento ou continue sua jornada.</p>
-          </div>
-          <div class="clean-status">
-            <span><i class="status-dot"></i> ONLINE</span>
-            <b>PROGRESSO</b>
-            <small>Região <strong id="lobbyRegionInfo">1/20</strong> • Fase <strong id="lobbyPhaseInfo">1/25</strong></small>
-          </div>
-        </div>
-
-        <div class="clean-lobby-grid">
-          <aside class="clean-side-card clean-profile-card">
-            <div class="clean-avatar">✦</div>
-            <p class="eyebrow">AVENTUREIRO</p>
-            <h2 id="lobbyNameInfo">Aventureiro</h2>
-            <div class="clean-level">LV <b id="lobbyLevelInfo">1</b></div>
-            <div class="clean-currency"><span>✦ <b id="lobbyCoinsInfo">250</b><small>Echo Coins</small></span><span>◆ <b id="lobbyShardsInfo">20</b><small>Fragmentos</small></span><span>◈ <b id="lobbyEssenceInfo">0</b><small>Essência</small></span></div>
-            <div class="clean-divider"></div>
-            <div class="clean-stat-list">
-              <div><span>XP</span><b id="lobbyXpInfo">0</b></div>
-              <div><span>Inimigos</span><b id="lobbyKillsInfo">0</b></div>
-              <div><span>Chefes</span><b id="lobbyBossesInfo">0</b></div>
-              <div><span>Conquistas</span><b id="lobbyAchievementsInfo">0/0</b></div>
-            </div>
-            <button class="clean-outline" data-lobby-service="stats">📊 Ver estatísticas</button>
-          </aside>
-
-          <section class="clean-main-card">
-            <div class="clean-section-title"><div><p class="eyebrow">ACESSO RÁPIDO</p><h2>O que deseja fazer?</h2></div><span>8 serviços</span></div>
-            <div class="clean-service-grid">
-              <button class="clean-service" data-lobby-service="shop" data-shop="Arsenal"><span class="clean-icon">⚔</span><b>Arsenal</b><small>Armas e combate</small></button>
-              <button class="clean-service" data-lobby-service="shop" data-shop="Ferreiro"><span class="clean-icon">🔨</span><b>Ferreiro</b><small>Armaduras e defesa</small></button>
-              <button class="clean-service" data-lobby-service="shop" data-shop="Alquimista"><span class="clean-icon">🧪</span><b>Alquimista</b><small>Poções e consumíveis</small></button>
-              <button class="clean-service" data-lobby-service="shop" data-shop="Relíquias"><span class="clean-icon">💎</span><b>Relíquias</b><small>Artefatos e bônus</small></button>
-              <button class="clean-service" data-lobby-service="inventory"><span class="clean-icon">🎒</span><b>Equipamento</b><small>Inventário e equipar</small></button>
-              <button class="clean-service" data-lobby-service="map"><span class="clean-icon">🗺️</span><b>Mapa do Mundo</b><small>20 regiões • 500 fases</small></button>
-              <button class="clean-service" data-lobby-service="online"><span class="clean-icon">🌐</span><b>Partida On-line</b><small>Cooperação e salas</small></button>
-              <button class="clean-service" data-lobby-service="stats"><span class="clean-icon">📈</span><b>Estatísticas</b><small>Seu desempenho</small></button>
-            </div>
-            <div class="clean-journey">
-              <div><div><p class="eyebrow">PRÓXIMA JORNADA</p><h3>Continuar aventura</h3><small id="lobbyJourneyInfo">Região 1 • Fase 1 • Normal</small></div><button class="clean-primary" data-action="continue">▶ CONTINUAR</button></div>
-              <div class="clean-progress"><i id="lobbyProgressBar" style="width:4%"></i></div>
-            </div>
-          </section>
-
-          <aside class="clean-side-card clean-news-card">
-            <p class="eyebrow">INFORMAÇÕES</p>
-            <h2>EchoBound</h2>
-            <div class="clean-info-row"><span>Regiões</span><b>20</b></div>
-            <div class="clean-info-row"><span>Fases</span><b>500</b></div>
-            <div class="clean-info-row"><span>Chefes</span><b>2.000</b></div>
-            <div class="clean-info-row"><span>Dificuldades</span><b>4</b></div>
-            <div class="clean-divider"></div>
-            <p class="clean-note">Use o mapa para escolher uma região e iniciar uma fase. Seus itens comprados e equipamentos ficam salvos no navegador.</p>
-            <div class="clean-controls"><b>CONTROLES</b><span>WASD / SETAS <small>movimentar</small></span><span>E <small>interagir</small></span><span>ESC <small>pausar</small></span></div>
-          </aside>
+    <section id="lobby" class="screen active lobby-world-screen">
+      <canvas id="lobbyCanvas"></canvas>
+      <div class="lobby-overlay">
+        <div class="lobby-title"><p class="eyebrow">SANTUÁRIO DOS ECOS • V5000</p><h1>LOBBY</h1><p>Ande livremente pelo santuário e interaja com os serviços.</p></div>
+        <div class="lobby-help">WASD / SETAS <span>mover</span> • Q/E <span>girar câmera</span> • <b>E</b> <span>interagir</span></div>
+        <div id="lobbyPrompt" class="lobby-prompt hidden"></div>
+        <div class="lobby-services">
+          <button data-lobby-service="shop" data-shop="Arsenal">⚔ Arsenal</button>
+          <button data-lobby-service="shop" data-shop="Ferreiro">🔨 Ferreiro</button>
+          <button data-lobby-service="shop" data-shop="Alquimista">🧪 Alquimista</button>
+          <button data-lobby-service="shop" data-shop="Relíquias">💎 Relíquias</button>
+          <button data-lobby-service="inventory">🎒 Equipamento</button>
+          <button data-lobby-service="stats">📊 Estatísticas</button>
+          <button data-lobby-service="map">🗺️ Mapa</button>
+          <button data-lobby-service="online">🌐 Partida On-line</button>
         </div>
       </div>
-      <canvas id="lobbyCanvas" aria-hidden="true"></canvas>
-      <div id="lobbyPrompt" class="lobby-prompt hidden"></div>
     </section>
 
     <section id="lobby2" class="screen">
@@ -177,7 +129,7 @@
 
 
     <section id="deluxe" class="screen">
-      <div class="section-head"><div><p class="eyebrow">vMetaModel2027 DELUXE EDITION</p><h2>Central Deluxe do Eco</h2><p>Desbloqueie técnicas, comércio completo, equipamentos e sinergias de combate.</p></div><button data-action="back">← Lobby</button></div>
+      <div class="section-head"><div><p class="eyebrow">vMetaModel2027 FINAL</p><h2>Laboratório do Eco</h2><p>Desbloqueie técnicas novas, mude seu estilo e ative sinergias de combate.</p></div><button data-action="back">← Lobby</button></div>
       <div class="deluxe-grid">
         <article class="panel"><p class="eyebrow">RECURSOS</p><h3>Essência do Eco</h3><div class="deluxe-resource"><b id="deluxeEssence">0</b><small>gerada em combate, parries e eventos</small></div><button data-deluxe="resonance">⚡ Ativar Ressonância</button></article>
         <article class="panel"><p class="eyebrow">TÉCNICAS</p><h3>Árvore de Técnicas</h3><div id="skillGrid" class="skill-grid"></div></article>
@@ -189,7 +141,7 @@
     <section id="release" class="screen">
       <div class="section-head"><div><p class="eyebrow">RELEASE FINAL</p><h2>Central vMetaModel2027</h2><p>Integridade, desempenho, anti-tamper e estado da versão publicada.</p></div><button data-action="lobby">← Voltar ao Lobby</button></div>
       <div class="release-grid">
-        <article class="panel"><p class="eyebrow">BUILD</p><h3 id="releaseBuild">vMetaModel2027 DELUXE EDITION</h3><p id="releaseBuildInfo">500 fases • 20 regiões • 2.000 encontros de chefe projetados.</p><span class="release-ok">● Pronto para publicação estática • Deluxe</span></article>
+        <article class="panel"><p class="eyebrow">BUILD</p><h3 id="releaseBuild">vMetaModel2027 FINAL</h3><p id="releaseBuildInfo">500 fases • 20 regiões • 2.000 encontros de chefe projetados.</p><span class="release-ok">● Pronto para publicação estática</span></article>
         <article class="panel"><p class="eyebrow">ANTI-TAMPER</p><h3 id="antiTamperStatus">Proteção ativa</h3><p id="antiTamperText">Validação de estado, limites, ações e integridade local.</p><span id="antiTamperScore" class="release-score">0 alertas</span></article>
         <article class="panel"><p class="eyebrow">ULTRA + DIFICULDADE</p><h3>Renderização adaptativa</h3><p>Perfil ULTRA 8K com teto de 7680×4320 quando o hardware suportar, com fallback automático.</p><select id="releaseQuality"><option value="ultra8k">ULTRA 8K</option><option value="ultra">ULTRA adaptativo</option><option value="high">ALTA</option><option value="performance">DESEMPENHO</option></select><select id="difficultySelect"><option>Fácil</option><option selected>Normal</option><option>Difícil</option><option>Pesadelo</option></select></article>
         <article class="panel"><p class="eyebrow">QA</p><h3>Verificação local</h3><div id="qaResults" class="qa-list"><div>Inicializando testes…</div></div><button data-action="runQA">RODAR DIAGNÓSTICO</button></article>

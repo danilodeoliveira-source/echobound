@@ -1,0 +1,75 @@
+{
+  "users": {
+    "tester": {
+      "user": "tester",
+      "password": "b7c216d1478fa64ccf66c393503b7fd1:9e4d19f158170b7832476ad63ab2c4eacf61b5031ff68cfa537caadb4c89c8b1bdf6536e5a9a8689c64cc5e53b0b594a680dbeb1c5575dda8a62bc9c01da6029",
+      "state": {
+        "region": 0,
+        "phase": 0,
+        "xp": 0,
+        "coins": 230,
+        "shards": 20,
+        "essence": 0,
+        "level": 1,
+        "name": "tester",
+        "quality": "ultra8k",
+        "difficulty": "Normal",
+        "completedPhases": 0,
+        "totalBossesDefeated": 0,
+        "antiTamperAlerts": 0,
+        "inventory": [],
+        "equipped": {},
+        "kills": 0,
+        "bosses": 0,
+        "missionsClaimed": [],
+        "achievements": [],
+        "totalCoinsEarned": 250,
+        "skills": [],
+        "style": "Caçador",
+        "commerce": {
+          "buys": 1,
+          "sells": 1,
+          "spent": 50,
+          "earned": 30,
+          "history": [
+            {
+              "type": "Venda",
+              "item": "Espada do Eco",
+              "amount": 30,
+              "t": 1788993712776
+            },
+            {
+              "type": "Compra",
+              "item": "Espada do Eco",
+              "amount": -50,
+              "t": 1788993712764
+            }
+          ]
+        }
+      },
+      "migrated": false,
+      "audit": [
+        {
+          "t": 1788993712776,
+          "action": "sell",
+          "itemId": "sword_echo",
+          "refund": 30
+        },
+        {
+          "t": 1788993712770,
+          "action": "equip",
+          "itemId": "sword_echo",
+          "slot": "arma"
+        },
+        {
+          "t": 1788993712764,
+          "action": "buy",
+          "itemId": "sword_echo",
+          "price": 50
+        }
+      ],
+      "createdAt": 1788993712146,
+      "updatedAt": 1788993712776
+    }
+  }
+}

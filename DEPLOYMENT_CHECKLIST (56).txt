@@ -1,0 +1,22 @@
+EchoBound vMetaModel2027 FINAL — checklist
+
+[OK] index.html / CSS / JS static assets
+[OK] .nojekyll
+[OK] GitHub Pages workflow using checkout@v6, configure-pages@v5, upload-pages-artifact@v4, deploy-pages@v4
+[OK] 20 regions / 500 phases / 2,000 boss encounters (4 per phase)
+[OK] Purchases / inventory / equipment
+[OK] Missions / achievements / XP / levels
+[OK] Echo Essence / combo / parry / dash / overload / styles / resonance
+[OK] Difficulty: Fácil / Normal / Difícil / Pesadelo
+[OK] Local save + integrity checksum + state sanitization
+[OK] Lightweight original lobby preserved
+[OK] WebGL renderer repaired: cube mesh 72 floats + column-major matrix multiplication
+[OK] ULTRA 8K adaptive render profile with framebuffer safety cap
+[OK] Compatibility canvas when WebGL is unavailable
+[OK] Intro cutscene hook
+[OK] QA deterministic sweep: 500 phases x 4 bosses = 2,000 boss encounters
+
+LIMITS
+- Multiplayer is only a client hook until a real WSS backend is configured.
+- Client anti-tamper is not sufficient for a competitive economy; use server-authoritative validation in production.
+- A literal real-time playthrough of all 500 phases was not performed; the 2,000-encounter completion claim is a deterministic logic simulation plus targeted browser combat tests.
