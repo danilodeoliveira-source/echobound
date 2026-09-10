@@ -82,3 +82,55 @@
 .clean-lobby-mode #topbar .brand{color:#17212d}.clean-lobby-mode #topbar .brand b{color:#6d62dc}.clean-lobby-mode #topbar .player-mini{color:#657386}.clean-lobby-mode #topbar .player-mini b{color:#1a2430}
 /* vMetaModel2027 Deluxe commerce */
 .item-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.item-actions button{margin:0}.item-actions .danger{border-color:#c46b72;color:#8e2f3b}.shop-wallet{grid-column:1/-1;display:grid;gap:6px;margin-bottom:2px}.shop-wallet b{font-size:20px}.shop-wallet small,.shop-wallet span{color:#667085;font-size:12px}.commerce-history{grid-column:1/-1}.commerce-history div{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid #e8edf3;font-size:12px}.commerce-history div span{font-weight:700}.equip-slot button{margin-top:10px}
+
+
+/* ==========================================================
+   EchoBound vMetaModel2027 Deluxe — WHITE 8-BIT UI
+   ========================================================== */
+:root{--w8-bg:#f4f4f4;--w8-panel:#ffffff;--w8-ink:#111111;--w8-mid:#666;--w8-line:#171717;--w8-soft:#e8e8e8}
+html,body{background:var(--w8-bg)!important;color:var(--w8-ink)!important;font-family:"Courier New",Consolas,monospace!important;image-rendering:pixelated}
+*{border-radius:0!important;box-shadow:none!important;text-shadow:none!important}
+button,input,select,textarea{font-family:"Courier New",Consolas,monospace!important}
+button{background:#fff!important;color:#111!important;border:3px solid #111!important;font-weight:800!important}
+button:hover{background:#111!important;color:#fff!important;border-color:#111!important;transform:none!important}
+.primary,.clean-primary{background:#111!important;color:#fff!important;border:3px solid #111!important}
+.screen,.lobby-dashboard-screen{background:#f4f4f4!important;color:#111!important}
+.panel,.hero-card,.region-card,.region-stat,.phase-card,.boss-card,.item-card,.modal-card,.clean-side-card,.clean-main-card,.skill-card,.release-grid .panel{background:#fff!important;color:#111!important;border:3px solid #111!important}
+.panel p,.lead,.section-head p,.region-card p,.phase-card p,.boss-card p,.item-card p,.clean-subtitle,.clean-note,.clean-controls small,.statline,.player-mini,.clean-status small{color:#555!important}
+.eyebrow,.clean-eyebrow,.clean-status span,.region-card .meta,.release-ok,.release-score{color:#111!important}
+.brand,.brand b,.hero h1,.hero h1 span,.clean-lobby-head h1,.clean-section-title h2,.clean-profile-card h2,.clean-news-card h2{color:#111!important}
+.chips span,.statline,.clean-info-row,.clean-stat-list div,.clean-currency span,.clean-level,.clean-controls span{background:#fafafa!important;color:#111!important;border:2px solid #111!important}
+#topbar,.clean-lobby-mode #topbar{background:#fff!important;color:#111!important;border-bottom:3px solid #111!important;backdrop-filter:none!important}
+.modal{background:#ffffffee!important;backdrop-filter:none!important}
+.auth-screen{background:#f4f4f4!important}
+.auth-card{background:#fff!important;border:4px solid #111!important;color:#111!important}
+.auth-card input{background:#fff!important;color:#111!important;border:3px solid #111!important}
+.auth-card label{color:#333!important}
+.auth-card small{color:#111!important}
+#game{background:#f4f4f4!important}
+.hud,.boss-hud,.chapter-hud,#combatHint,.quality-panel,#dock{font-family:"Courier New",Consolas,monospace!important}
+.hud,.boss-hud,.chapter-hud{color:#111!important;text-shadow:none!important}
+.bar{background:#fff!important;border:3px solid #111!important}
+.bar i,.bar.xp i,.clean-progress i,.progress i{background:#111!important}
+.mission small,.mission span,.chapter-hud span,.chapter-hud small{color:#333!important}
+#combatHint,.quality-panel,#dock{background:#fff!important;color:#111!important;border:3px solid #111!important;backdrop-filter:none!important}
+#dock button{background:#fff!important;color:#111!important;border:2px solid #111!important}
+#dock button:hover{background:#111!important;color:#fff!important}
+.fallback-canvas{background:#fff!important}
+.render-notice{background:#fff!important;color:#111!important;border:4px solid #111!important}
+.render-notice b{color:#111!important}
+.compat-btn{background:#fff!important;color:#111!important;border:3px solid #111!important}
+.shop-notice{background:#fff!important;color:#111!important;border:3px solid #111!important}
+.item-actions .danger{border-color:#111!important;color:#111!important}
+.boss-card .boss-icon,.avatar,.clean-avatar{background:#111!important;color:#fff!important}
+.clean-outline{background:#fff!important;color:#111!important;border:3px solid #111!important}
+.clean-outline:hover{background:#111!important;color:#fff!important}
+.clean-journey{background:#fafafa!important;border:3px solid #111!important}
+.clean-service{background:#fff!important;color:#111!important;border:3px solid #111!important}
+.clean-service .clean-icon{background:#fff!important;color:#111!important;border:2px solid #111!important}
+.clean-service:hover{background:#111!important;color:#fff!important;border-color:#111!important}
+.clean-progress{background:#fff!important;border:3px solid #111!important}
+.phase-toolbar input,.screen#release select,.quality-panel select{background:#fff!important;color:#111!important;border:3px solid #111!important}
+.badge{border:2px solid #111!important;color:#111!important;background:#fff!important}
+
+a{color:#111!important;text-decoration:underline}
