@@ -40,14 +40,14 @@
       <div class="clean-lobby">
         <div class="clean-lobby-head">
           <div>
-            <p class="eyebrow clean-eyebrow">SANTUÁRIO DOS ECOS • vMetaModel2027</p>
+            <p class="eyebrow clean-eyebrow">CENTRO DE VELOCIDADE • vMetaModel2027</p>
             <h1>LOBBY</h1>
             <p class="clean-subtitle">Seu centro de aventura. Escolha uma atividade, prepare seu equipamento ou continue sua jornada.</p>
           </div>
           <div class="clean-status">
             <span><i class="status-dot"></i> ONLINE</span>
             <b>PROGRESSO</b>
-            <small>Região <strong id="lobbyRegionInfo">1/20</strong> • Fase <strong id="lobbyPhaseInfo">1/25</strong></small>
+            <small>Zona <strong id="lobbyRegionInfo">1/12</strong> • Ato <strong id="lobbyPhaseInfo">1/3</strong></small>
           </div>
         </div>
 
@@ -76,12 +76,12 @@
               <button class="clean-service" data-lobby-service="shop" data-shop="Alquimista"><span class="clean-icon">🧪</span><b>Alquimista</b><small>Poções e consumíveis</small></button>
               <button class="clean-service" data-lobby-service="shop" data-shop="Relíquias"><span class="clean-icon">💎</span><b>Relíquias</b><small>Artefatos e bônus</small></button>
               <button class="clean-service" data-lobby-service="inventory"><span class="clean-icon">🎒</span><b>Equipamento</b><small>Inventário e equipar</small></button>
-              <button class="clean-service" data-lobby-service="map"><span class="clean-icon">🗺️</span><b>Mapa do Mundo</b><small>20 regiões • 500 fases</small></button>
+              <button class="clean-service" data-lobby-service="map"><span class="clean-icon">🗺️</span><b>Mapa do Mundo</b><small>12 zonas • 36 atos</small></button>
               <button class="clean-service" data-lobby-service="online"><span class="clean-icon">🌐</span><b>Partida On-line</b><small>Cooperação e salas</small></button>
               <button class="clean-service" data-lobby-service="stats"><span class="clean-icon">📈</span><b>Estatísticas</b><small>Seu desempenho</small></button>
             </div>
             <div class="clean-journey">
-              <div><div><p class="eyebrow">PRÓXIMA JORNADA</p><h3>Continuar aventura</h3><small id="lobbyJourneyInfo">Região 1 • Fase 1 • Normal</small></div><button class="clean-primary" data-action="continue">▶ CONTINUAR</button></div>
+              <div><div><p class="eyebrow">PRÓXIMA JORNADA</p><h3>Continuar corrida</h3><small id="lobbyJourneyInfo">Pradaria Pixel • Ato 1 • Normal</small></div><button class="clean-primary" data-action="continue">▶ CONTINUAR</button></div>
               <div class="clean-progress"><i id="lobbyProgressBar" style="width:4%"></i></div>
             </div>
           </section>
@@ -90,8 +90,8 @@
             <p class="eyebrow">INFORMAÇÕES</p>
             <h2>EchoBound</h2>
             <div class="clean-info-row"><span>Regiões</span><b>20</b></div>
-            <div class="clean-info-row"><span>Fases</span><b>500</b></div>
-            <div class="clean-info-row"><span>Chefes</span><b>2.000</b></div>
+            <div class="clean-info-row"><span>Atos</span><b>36</b></div>
+            <div class="clean-info-row"><span>Chefes</span><b>8</b></div>
             <div class="clean-info-row"><span>Dificuldades</span><b>4</b></div>
             <div class="clean-divider"></div>
             <p class="clean-note">Use o mapa para escolher uma região e iniciar uma fase. Seus itens comprados e equipamentos ficam salvos no navegador.</p>
@@ -105,18 +105,18 @@
 
     <section id="lobby2" class="screen">
       <div class="dungeon-lobby">
-        <div class="section-head"><div><p class="eyebrow">SANTUÁRIO DOS ECOS</p><h2>Lobby II — Praça da Aventura</h2><p>Um hub em visão isométrica, inspirado no clima de dungeon crawler, com acesso ao mapa e às atividades.</p></div><button data-action="lobby">← Lobby principal</button></div>
+        <div class="section-head"><div><p class="eyebrow">CENTRO DE VELOCIDADE</p><h2>Lobby II — Praça da Velocidade</h2><p>Um hub branco 8-bit para preparar a corrida, comprar equipamentos e escolher a zona.</p></div><button data-action="lobby">← Lobby principal</button></div>
         <div class="iso-scene">
           <div class="iso-ground"></div>
           <div class="iso-building merchant forge"><span>⚒</span><b>Ferreiro</b><small>Equipamentos</small></div>
           <div class="iso-building merchant alchemy"><span>⚗</span><b>Alquimista</b><small>Poções</small></div>
           <div class="iso-building merchant relic"><span>✦</span><b>Relíquias</b><small>Artefatos</small></div>
-          <div class="iso-portal"><div class="portal-ring">🗺️</div><b>MAPA DO MUNDO</b><small>20 regiões • 500 fases</small></div>
+          <div class="iso-portal"><div class="portal-ring">🗺️</div><b>MAPA DO MUNDO</b><small>12 zonas • 36 atos</small></div>
           <div class="iso-hero">🧍<span>Você</span></div>
-          <div class="iso-table">📜<span>Mapa de expedições</span></div>
+          <div class="iso-table">📜<span>Mapa de velocidade</span></div>
         </div>
         <div class="lobby2-actions">
-          <button class="primary" data-action="map">🗺️ ABRIR MAPA DE FASES</button>
+          <button class="primary" data-action="map">🗺️ ABRIR MAPA DE ZONAS</button>
           <button data-action="online">🌐 PARTIDA ON-LINE</button>
           <button data-action="inventory">🎒 EQUIPAMENTO</button>
           <button data-action="codex">👹 BESTIÁRIO</button>
@@ -134,7 +134,7 @@
     </section>
 
     <section id="worldMap" class="screen">
-      <div class="section-head"><div><p class="eyebrow">ATLAS</p><h2>Mapa das 20 Regiões</h2></div><button data-action="back">← Lobby</button></div>
+      <div class="section-head"><div><p class="eyebrow">ATLAS</p><h2>Mapa das 12 Zonas</h2></div><button data-action="back">← Lobby</button></div>
       <div id="regionGrid" class="region-grid"></div>
     </section>
 
@@ -146,7 +146,7 @@
       <div class="region-stats" id="regionStats"></div>
       <div class="phase-toolbar">
         <button class="filter active" data-filter="all">Todas</button>
-        <button class="filter" data-filter="normal">Fases</button>
+        <button class="filter" data-filter="normal">Atos</button>
         <button class="filter" data-filter="boss">Chefes</button>
         <button class="filter" data-filter="event">Eventos</button>
         <input id="phaseSearch" placeholder="Buscar fase...">
@@ -155,7 +155,7 @@
     </section>
 
     <section id="codex" class="screen">
-      <div class="section-head"><div><p class="eyebrow">CODEX</p><h2>Bestiário dos 2.000 Chefes</h2></div><button data-action="back">← Lobby</button></div>
+      <div class="section-head"><div><p class="eyebrow">CODEX</p><h2>Desafios de Velocidade</h2></div><button data-action="back">← Lobby</button></div>
       <div class="codex-note">Cada região possui 100 chefes com nome, elemento, comportamento, arena, recompensas e modificadores próprios.</div>
       <div id="bossGrid" class="boss-grid"></div>
     </section>
@@ -189,7 +189,7 @@
     <section id="release" class="screen">
       <div class="section-head"><div><p class="eyebrow">RELEASE FINAL</p><h2>Central vMetaModel2027</h2><p>Integridade, desempenho, anti-tamper e estado da versão publicada.</p></div><button data-action="lobby">← Voltar ao Lobby</button></div>
       <div class="release-grid">
-        <article class="panel"><p class="eyebrow">BUILD</p><h3 id="releaseBuild">vMetaModel2027 DELUXE EDITION</h3><p id="releaseBuildInfo">500 fases • 20 regiões • 2.000 encontros de chefe projetados.</p><span class="release-ok">● Pronto para publicação estática • Deluxe</span></article>
+        <article class="panel"><p class="eyebrow">BUILD</p><h3 id="releaseBuild">vMetaModel2027 DELUXE EDITION</h3><p id="releaseBuildInfo">12 zonas • 36 atos • corrida, anéis, molas e atalhos.</p><span class="release-ok">● Pronto para publicação estática • Deluxe</span></article>
         <article class="panel"><p class="eyebrow">ANTI-TAMPER</p><h3 id="antiTamperStatus">Proteção ativa</h3><p id="antiTamperText">Validação de estado, limites, ações e integridade local.</p><span id="antiTamperScore" class="release-score">0 alertas</span></article>
         <article class="panel"><p class="eyebrow">ULTRA + DIFICULDADE</p><h3>Renderização adaptativa</h3><p>Perfil ULTRA 8K com teto de 7680×4320 quando o hardware suportar, com fallback automático.</p><select id="releaseQuality"><option value="ultra8k">ULTRA 8K</option><option value="ultra">ULTRA adaptativo</option><option value="high">ALTA</option><option value="performance">DESEMPENHO</option></select><select id="difficultySelect"><option>Fácil</option><option selected>Normal</option><option>Difícil</option><option>Pesadelo</option></select></article>
         <article class="panel"><p class="eyebrow">QA</p><h3>Verificação local</h3><div id="qaResults" class="qa-list"><div>Inicializando testes…</div></div><button data-action="runQA">RODAR DIAGNÓSTICO</button></article>
@@ -208,7 +208,7 @@
           <div class="bar hp"><i id="hpBar"></i></div>
           <div class="bar xp"><i id="xpBar"></i></div>
         </div>
-        <div class="mission"><small id="regionHud">REGIÃO</small><b id="phaseHud">FASE</b><span id="objective">Explore a área</span></div>
+        <div class="mission"><small id="regionHud">REGIÃO</small><b id="phaseHud">ATO</b><span id="objective">Explore a área</span></div>
         <div class="hud-right"><div>✦ <b id="hudCoins">250</b></div><div>◆ <b id="hudShards">20</b></div><div>◈ <b id="hudEssence">0</b></div><div>🔥 <b id="comboLabel">0</b></div></div>
       </div>
       <div id="bossHud" class="boss-hud hidden"><b id="bossName">BOSS</b><div class="bar boss"><i id="bossBar"></i></div><small id="bossMods"></small></div>
@@ -218,10 +218,10 @@
       <div id="cutscene" class="modal hidden"><div class="modal-card"><p class="eyebrow" id="cutsceneEyebrow">ECHOBOUND</p><h2 id="cutsceneTitle">O Eco despertou</h2><p id="cutsceneText">A jornada começa.</p><button class="primary" id="cutsceneContinue">CONTINUAR</button></div></div>
       <button id="pauseBtn" class="pause" data-action="pause">Ⅱ</button>
       <div id="pauseMenu" class="modal hidden">
-        <div class="modal-card"><p class="eyebrow">PAUSA</p><h2>EchoBound</h2><button data-action="resume">Continuar</button><button data-action="restart">Reiniciar fase</button><button data-action="map">Sair para o mapa</button></div>
+        <div class="modal-card"><p class="eyebrow">PAUSA</p><h2>EchoBound</h2><button data-action="resume">Continuar</button><button data-action="restart">Reiniciar ato</button><button data-action="map">Sair para o mapa</button></div>
       </div>
       <div id="victory" class="modal hidden">
-        <div class="modal-card victory-card"><p class="eyebrow">ECO CONQUISTADO</p><h2 id="victoryTitle">Vitória!</h2><p id="victoryText"></p><button class="primary" data-action="next">Próxima fase</button><button data-action="map">Voltar ao mapa</button></div>
+        <div class="modal-card victory-card"><p class="eyebrow">ECO CONQUISTADO</p><h2 id="victoryTitle">Vitória!</h2><p id="victoryText"></p><button class="primary" data-action="next">Próximo ato</button><button data-action="map">Voltar ao mapa</button></div>
       </div>
     </section>
   </main>
